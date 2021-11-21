@@ -1,10 +1,10 @@
 use crate::util::{download_file, get_base_dir};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs::File;
 use std::path::PathBuf;
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Version {
     pub id: String,
     pub r#type: String,
