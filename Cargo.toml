@@ -1,7 +1,10 @@
 [package]
 name = "libmc"
 version = "0.1.0"
+authors = ["Manuel Quarneti <manuelquarneti@gmail.com>"]
 edition = "2021"
+repository = "https://github.com/mq1/libmc"
+license = "GPL-3.0-or-later"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
