@@ -33,7 +33,7 @@ fn download_asset(hash: String) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn download_assets(asset_index_url: String) -> Result<(), Box<dyn Error>> {
-    let resp = reqwest::blocking::get(asset_index_url)?.json::<Assets>()?;
+    let resp: Assets = ureq::get(&asset_index_url).call()?.into_json()?;
     let objects = resp.objects.values().cloned().collect::<Vec<Object>>();
     for object in objects.into_iter() {
         download_asset(object.hash)?;

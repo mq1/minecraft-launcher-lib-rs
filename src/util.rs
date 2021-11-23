@@ -20,7 +20,7 @@ pub fn download_file<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> Result<(
 	let dir = path.as_ref().parent().ok_or("error getting parent dir")?;
 	create_dir_all(dir)?;
 
-	let mut resp = reqwest::blocking::get(url.as_ref())?;
+	let mut resp = ureq::get(url.as_ref()).call()?.into_reader();
 	let mut out = File::create(path.as_ref())?;
 	io::copy(&mut resp, &mut out)?;
 

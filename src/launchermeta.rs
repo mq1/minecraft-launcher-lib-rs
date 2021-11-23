@@ -41,10 +41,8 @@ fn get_minecraft_manifest_path<S: AsRef<str>>(
     Ok(minecraft_version_manifest_path.to_path_buf())
 }
 
-pub fn get_minecraft_versions() -> Result<Vec<Version>, reqwest::Error> {
-    let resp =
-        reqwest::blocking::get("https://launchermeta.mojang.com/mc/game/version_manifest.json")?
-            .json::<VersionManifest>()?;
+pub fn get_minecraft_versions() -> Result<Vec<Version>, ureq::Error> {
+    let resp: VersionManifest = ureq::get("https://launchermeta.mojang.com/mc/game/version_manifest.json").call()?.into_json()?;
 
     Ok(resp.versions)
 }
