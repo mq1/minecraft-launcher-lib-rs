@@ -1,17 +1,23 @@
+use crate::util::get_base_dir;
 use serde::{Deserialize, Serialize};
 use std::{error::Error, fs::File, path::PathBuf};
-use crate::util::get_base_dir;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize)]
 struct JavaConfig {
     path: String,
     memory: String,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize)]
 struct Config {
     locale: String,
     java: JavaConfig,
+}
+
+impl AsRef<Config> for Config {
+    fn as_ref(&self) -> &Config {
+        self
+    }
 }
 
 fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
@@ -39,11 +45,11 @@ fn read() -> Result<Config, Box<dyn Error>> {
     Ok(config)
 }
 
-fn write(config: Config) -> Result<(), Box<dyn Error>> {
+fn write<C: AsRef<Config>>(config: C) -> Result<(), Box<dyn Error>> {
     let path = get_config_path()?;
 
     let file = File::open(path)?;
-    serde_json::to_writer(file, &config)?;
+    serde_json::to_writer(file, config.as_ref())?;
 
     Ok(())
 }
@@ -51,7 +57,7 @@ fn write(config: Config) -> Result<(), Box<dyn Error>> {
 fn new() -> Result<Config, Box<dyn Error>> {
     let config = getDefaultConfig();
 
-    write(config.clone())?;
+    write(&config)?;
 
     Ok(config)
 }
