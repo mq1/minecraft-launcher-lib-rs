@@ -22,7 +22,7 @@ fn get_instance_path<S: AsRef<str>>(name: S) -> Result<PathBuf, Box<dyn Error>> 
 fn read_config<S: AsRef<str>>(instance_name: S) -> Result<Config, Box<dyn Error>> {
     let path = get_instance_path(instance_name)?.join("config.yml");
     let config_file = File::open(path)?;
-    let config = serde_yaml::from_reader(config_file)?;
+    let config = serde_json::from_reader(config_file)?;
 
     Ok(config)
 }
@@ -30,7 +30,7 @@ fn read_config<S: AsRef<str>>(instance_name: S) -> Result<Config, Box<dyn Error>
 fn write_config<S: AsRef<str>>(instance_name: S, config: Config) -> Result<(), Box<dyn Error>> {
     let path = get_instance_path(instance_name)?.join("config.yml");
     let config_file = File::create(path)?;
-    serde_yaml::to_writer(config_file, &config)?;
+    serde_json::to_writer(config_file, &config)?;
 
     Ok(())
 }
