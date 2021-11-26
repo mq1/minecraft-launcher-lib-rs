@@ -1,6 +1,7 @@
 pub mod assets;
 pub mod instances;
 pub mod launchermeta;
+pub mod config;
 mod util;
 
 #[cfg(test)]
