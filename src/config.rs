@@ -26,7 +26,7 @@ fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
     Ok(path)
 }
 
-fn getDefaultConfig() -> Config {
+pub fn get_default_config() -> Config {
     Config {
         locale: "en".to_string(),
         java: JavaConfig {
@@ -37,7 +37,7 @@ fn getDefaultConfig() -> Config {
 }
 
 fn new() -> Result<Config, Box<dyn Error>> {
-    let config = getDefaultConfig();
+    let config = get_default_config();
 
     write(&config)?;
 
