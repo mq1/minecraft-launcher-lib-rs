@@ -1,6 +1,6 @@
 use crate::util::get_base_dir;
 use serde::{Deserialize, Serialize};
-use std::{error::Error, fs::File, path::PathBuf};
+use std::{error::Error, fs::File, path::{Path, PathBuf}};
 
 #[derive(Serialize, Deserialize)]
 struct JavaConfig {
@@ -36,8 +36,20 @@ fn getDefaultConfig() -> Config {
     }
 }
 
-fn read() -> Result<Config, Box<dyn Error>> {
+fn new() -> Result<Config, Box<dyn Error>> {
+    let config = getDefaultConfig();
+
+    write(&config)?;
+
+    Ok(config)
+}
+
+pub fn read() -> Result<Config, Box<dyn Error>> {
     let path = get_config_path()?;
+
+    if Path::is_file(&path) {
+        return new();
+    }
 
     let file = File::open(path)?;
     let config = serde_json::from_reader(file)?;
@@ -45,19 +57,11 @@ fn read() -> Result<Config, Box<dyn Error>> {
     Ok(config)
 }
 
-fn write<C: AsRef<Config>>(config: C) -> Result<(), Box<dyn Error>> {
+pub fn write<C: AsRef<Config>>(config: C) -> Result<(), Box<dyn Error>> {
     let path = get_config_path()?;
 
     let file = File::open(path)?;
     serde_json::to_writer(file, config.as_ref())?;
 
     Ok(())
-}
-
-fn new() -> Result<Config, Box<dyn Error>> {
-    let config = getDefaultConfig();
-
-    write(&config)?;
-
-    Ok(config)
 }
