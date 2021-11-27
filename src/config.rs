@@ -9,7 +9,7 @@ struct JavaConfig {
 }
 
 #[derive(Serialize, Deserialize)]
-struct Config {
+pub struct Config {
     locale: String,
     java: JavaConfig,
 }
