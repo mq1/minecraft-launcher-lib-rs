@@ -40,12 +40,18 @@ fn get_minecraft_manifest_path(minecraft_version: &str) -> Result<PathBuf, Box<d
 }
 
 pub fn get_minecraft_versions() -> Result<Vec<Version>, ureq::Error> {
-    let resp: VersionManifest = ureq::get("https://launchermeta.mojang.com/mc/game/version_manifest.json").call()?.into_json()?;
+    let resp: VersionManifest =
+        ureq::get("https://launchermeta.mojang.com/mc/game/version_manifest.json")
+            .call()?
+            .into_json()?;
 
     Ok(resp.versions)
 }
 
-pub fn download_minecraft_manifest(minecraft_version: &str, minecraft_version_manifest_url: &str) -> Result<(), Box<dyn Error>> {
+pub fn download_minecraft_manifest(
+    minecraft_version: &str,
+    minecraft_version_manifest_url: &str,
+) -> Result<(), Box<dyn Error>> {
     let minecraft_version_manifest_path = get_minecraft_manifest_path(minecraft_version)?;
 
     download_file(

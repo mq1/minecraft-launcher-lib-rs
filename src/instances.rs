@@ -55,7 +55,11 @@ pub fn get_instance_list() -> Result<Vec<String>, Box<dyn Error>> {
     Ok(instance_list)
 }
 
-pub fn new_instance(name: &str, minecraft_version: &str, minecraft_version_manifest_url: &str) -> Result<(), Box<dyn Error>> {
+pub fn new_instance(
+    name: &str,
+    minecraft_version: &str,
+    minecraft_version_manifest_url: &str,
+) -> Result<(), Box<dyn Error>> {
     let instance_dir = get_instance_path(name)?;
     create_dir_all(&instance_dir)?;
 
