@@ -61,7 +61,7 @@ pub fn new_instance(
     minecraft_version_manifest_url: &str,
 ) -> Result<(), Box<dyn Error>> {
     let instance_dir = get_instance_path(name)?;
-    create_dir_all(&instance_dir)?;
+    create_dir_all(instance_dir)?;
 
     let config = Config {
         minecraft_version: minecraft_version.to_owned(),
@@ -69,6 +69,14 @@ pub fn new_instance(
     write_config(name, &config)?;
 
     download_minecraft_manifest(minecraft_version, minecraft_version_manifest_url)?;
+
+    Ok(())
+}
+
+pub fn remove_instance(name: &str) -> Result<(), Box<dyn Error>> {
+    let instance_dir = get_instance_path(name)?;
+
+    fs::remove_dir_all(instance_dir)?;
 
     Ok(())
 }
