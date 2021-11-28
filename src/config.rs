@@ -30,7 +30,7 @@ pub fn get_default_config() -> Config {
     }
 }
 
-fn new() -> Result<Config, Box<dyn Error>> {
+pub fn new() -> Result<Config, Box<dyn Error>> {
     let config = get_default_config();
 
     write(&config)?;
