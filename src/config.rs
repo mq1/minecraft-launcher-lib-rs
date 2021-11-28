@@ -54,7 +54,7 @@ pub fn read() -> Result<Config, Box<dyn Error>> {
 pub fn write(config: &Config) -> Result<(), Box<dyn Error>> {
     let path = get_config_path()?;
 
-    let file = File::open(path)?;
+    let file = File::create(path)?;
     serde_json::to_writer(file, config)?;
 
     Ok(())
