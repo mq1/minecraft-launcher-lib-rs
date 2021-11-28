@@ -1,6 +1,10 @@
 use crate::util::get_base_dir;
 use serde::{Deserialize, Serialize};
-use std::{error::Error, fs::File, path::{Path, PathBuf}};
+use std::{
+    error::Error,
+    fs,
+    path::{Path, PathBuf},
+};
 
 #[derive(Serialize, Deserialize)]
 struct JavaConfig {
@@ -15,7 +19,7 @@ pub struct Config {
 }
 
 pub fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
-    let path = get_base_dir()?.join("config.json");
+    let path = get_base_dir()?.join("config.toml");
 
     Ok(path)
 }
@@ -45,17 +49,16 @@ pub fn read() -> Result<Config, Box<dyn Error>> {
         return new();
     }
 
-    let file = File::open(path)?;
-    let config = serde_json::from_reader(file)?;
+    let data = fs::read_to_string(path)?;
+    let config = toml::from_str(&data)?;
 
     Ok(config)
 }
 
 pub fn write(config: &Config) -> Result<(), Box<dyn Error>> {
     let path = get_config_path()?;
-
-    let file = File::create(path)?;
-    serde_json::to_writer(file, config)?;
+    let config = toml::to_string(config)?;
+    fs::write(path, config)?;
 
     Ok(())
 }

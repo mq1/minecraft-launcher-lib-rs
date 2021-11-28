@@ -4,7 +4,8 @@ use crate::launchermeta::read_minecraft_manifest;
 use crate::util::get_base_dir;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use std::fs::{create_dir_all, read_dir, File};
+use std::fs;
+use std::fs::{create_dir_all, read_dir};
 use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize)]
@@ -19,18 +20,24 @@ fn get_instance_path(name: &str) -> Result<PathBuf, Box<dyn Error>> {
     Ok(path)
 }
 
+fn get_config_path(instance_name: &str) -> Result<PathBuf, Box<dyn Error>> {
+    let path = get_instance_path(instance_name)?.join("config.toml");
+
+    Ok(path)
+}
+
 fn read_config(instance_name: &str) -> Result<Config, Box<dyn Error>> {
-    let path = get_instance_path(instance_name)?.join("config.json");
-    let config_file = File::open(path)?;
-    let config = serde_json::from_reader(config_file)?;
+    let path = get_config_path(instance_name)?;
+    let data = fs::read_to_string(path)?;
+    let config = toml::from_str(&data)?;
 
     Ok(config)
 }
 
 fn write_config(instance_name: &str, config: &Config) -> Result<(), Box<dyn Error>> {
-    let path = get_instance_path(instance_name)?.join("config.json");
-    let config_file = File::create(path)?;
-    serde_json::to_writer(config_file, config)?;
+    let path = get_config_path(instance_name)?;
+    let data = toml::to_string(config)?;
+    fs::write(path, data)?;
 
     Ok(())
 }
