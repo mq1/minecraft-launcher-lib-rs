@@ -13,7 +13,7 @@ struct Object {
     hash: String,
 }
 
-fn download_asset(hash: String) -> Result<(), Box<dyn Error>> {
+fn download_asset(hash: &str) -> Result<(), Box<dyn Error>> {
     let first2 = &hash[..2];
 
     let path = get_base_dir()?
@@ -27,16 +27,17 @@ fn download_asset(hash: String) -> Result<(), Box<dyn Error>> {
         first2, hash
     );
 
-    download_file(url, path)?;
+    download_file(&url, &path)?;
 
     Ok(())
 }
 
-pub fn download_assets(asset_index_url: String) -> Result<(), Box<dyn Error>> {
+pub fn download_assets(asset_index_url: &str) -> Result<(), Box<dyn Error>> {
     let resp: Assets = ureq::get(&asset_index_url).call()?.into_json()?;
-    let objects = resp.objects.values().cloned().collect::<Vec<Object>>();
-    for object in objects.into_iter() {
-        download_asset(object.hash)?;
+
+    let objects = resp.objects.values().collect::<Vec<&Object>>();
+    for object in objects.iter() {
+        download_asset(&object.hash)?;
     }
 
     Ok(())

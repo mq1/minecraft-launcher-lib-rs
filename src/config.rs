@@ -14,12 +14,6 @@ pub struct Config {
     java: JavaConfig,
 }
 
-impl AsRef<Config> for Config {
-    fn as_ref(&self) -> &Config {
-        self
-    }
-}
-
 fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
     let path = get_base_dir()?.join("config.json");
 
@@ -57,11 +51,11 @@ pub fn read() -> Result<Config, Box<dyn Error>> {
     Ok(config)
 }
 
-pub fn write<C: AsRef<Config>>(config: C) -> Result<(), Box<dyn Error>> {
+pub fn write(config: &Config) -> Result<(), Box<dyn Error>> {
     let path = get_config_path()?;
 
     let file = File::open(path)?;
-    serde_json::to_writer(file, config.as_ref())?;
+    serde_json::to_writer(file, config)?;
 
     Ok(())
 }

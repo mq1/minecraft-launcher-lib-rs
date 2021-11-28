@@ -11,20 +11,20 @@ pub fn get_base_dir() -> Result<PathBuf, Box<dyn Error>> {
 	Ok(dir)
 }
 
-pub fn download_file<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> Result<(), Box<dyn Error>> {
-	if path.as_ref().exists() {
-		println!("{:?} already present", path.as_ref());
+pub fn download_file(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
+	if path.exists() {
+		println!("{:?} already present", path);
 		return Ok(());
 	}
 
-	let dir = path.as_ref().parent().ok_or("error getting parent dir")?;
+	let dir = path.parent().ok_or("error getting parent dir")?;
 	create_dir_all(dir)?;
 
-	let mut resp = ureq::get(url.as_ref()).call()?.into_reader();
-	let mut out = File::create(path.as_ref())?;
+	let mut resp = ureq::get(url).call()?.into_reader();
+	let mut out = File::create(path)?;
 	io::copy(&mut resp, &mut out)?;
 
-	println!("downloaded file {} to {:?}", url.as_ref(), path.as_ref());
+	println!("downloaded file {} to {:?}", url, path);
 
 	Ok(())
 }

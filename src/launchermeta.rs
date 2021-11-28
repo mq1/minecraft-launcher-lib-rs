@@ -28,10 +28,8 @@ pub struct MinecraftMeta {
     pub asset_index: AssetIndex,
 }
 
-fn get_minecraft_manifest_path<S: AsRef<str>>(
-    minecraft_version: S,
-) -> Result<PathBuf, Box<dyn Error>> {
-    let file_name = format!("{}.json", minecraft_version.as_ref());
+fn get_minecraft_manifest_path(minecraft_version: &str) -> Result<PathBuf, Box<dyn Error>> {
+    let file_name = format!("{}.json", minecraft_version);
 
     let minecraft_version_manifest_path = get_base_dir()?
         .join("meta")
@@ -47,23 +45,18 @@ pub fn get_minecraft_versions() -> Result<Vec<Version>, ureq::Error> {
     Ok(resp.versions)
 }
 
-pub fn download_minecraft_manifest<S: AsRef<str>>(
-    minecraft_version: S,
-    minecraft_version_manifest_url: S,
-) -> Result<(), Box<dyn Error>> {
+pub fn download_minecraft_manifest(minecraft_version: &str, minecraft_version_manifest_url: &str) -> Result<(), Box<dyn Error>> {
     let minecraft_version_manifest_path = get_minecraft_manifest_path(minecraft_version)?;
 
     download_file(
         minecraft_version_manifest_url,
-        minecraft_version_manifest_path,
+        &minecraft_version_manifest_path,
     )?;
 
     Ok(())
 }
 
-pub fn read_minecraft_manifest<S: AsRef<str>>(
-    minecraft_version: S,
-) -> Result<MinecraftMeta, Box<dyn Error>> {
+pub fn read_minecraft_manifest(minecraft_version: &str) -> Result<MinecraftMeta, Box<dyn Error>> {
     let minecraft_version_manifest_path = get_minecraft_manifest_path(minecraft_version)?;
     let file = File::open(minecraft_version_manifest_path)?;
     let config = serde_json::from_reader(file)?;
