@@ -14,7 +14,7 @@ pub struct Config {
     java: JavaConfig,
 }
 
-fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
+pub fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
     let path = get_base_dir()?.join("config.json");
 
     Ok(path)
