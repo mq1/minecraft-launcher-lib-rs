@@ -81,6 +81,15 @@ pub fn remove_instance(name: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+pub fn rename_instance(old_name: &str, new_name: &str) -> Result<(), Box<dyn Error>> {
+    let old_instance_dir = get_instance_path(old_name)?;
+    let new_instance_dir = old_instance_dir.parent().unwrap().join(new_name);
+
+    fs::rename(old_instance_dir, new_instance_dir)?;
+
+    Ok(())
+}
+
 pub fn run_instance(name: &str) -> Result<(), Box<dyn Error>> {
     let config = read_config(name)?;
     let minecraft_meta = read_minecraft_manifest(&config.minecraft_version)?;
