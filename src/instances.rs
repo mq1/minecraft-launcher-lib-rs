@@ -1,4 +1,5 @@
 use crate::assets::download_assets;
+use crate::config;
 use crate::launchermeta::download_minecraft_manifest;
 use crate::launchermeta::read_minecraft_manifest;
 use crate::util::get_base_dir;
@@ -91,6 +92,14 @@ pub fn rename_instance(old_name: &str, new_name: &str) -> Result<(), Box<dyn Err
 }
 
 pub fn run_instance(name: &str) -> Result<(), Box<dyn Error>> {
+    // update last runned instance
+    let global_config = config::read()?;
+    let global_config = config::Config {
+        last_runned_instance: name.to_owned(),
+        ..global_config
+    };
+    config::write(&global_config)?;
+
     let config = read_config(name)?;
     let minecraft_meta = read_minecraft_manifest(&config.minecraft_version)?;
 

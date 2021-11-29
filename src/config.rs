@@ -7,15 +7,16 @@ use std::{
 };
 
 #[derive(Serialize, Deserialize)]
-struct JavaConfig {
+pub struct JavaConfig {
     path: String,
     memory: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
-    locale: String,
-    java: JavaConfig,
+    pub locale: String,
+    pub java: JavaConfig,
+    pub last_runned_instance: String,
 }
 
 pub fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
@@ -31,6 +32,7 @@ pub fn get_default_config() -> Config {
             path: "java".to_string(),
             memory: "2G".to_string(),
         },
+        last_runned_instance: String::new(),
     }
 }
 
