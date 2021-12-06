@@ -1,5 +1,5 @@
 use crate::util::get_base_dir;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
 use std::{
     error::Error,
     fs,
@@ -36,6 +36,14 @@ pub fn get_default_config() -> Config {
     }
 }
 
+pub fn write(config: &Config) -> Result<(), Box<dyn Error>> {
+    let path = get_config_path()?;
+    let config = toml::to_string(config)?;
+    fs::write(path, config)?;
+
+    Ok(())
+}
+
 pub fn new() -> Result<Config, Box<dyn Error>> {
     let config = get_default_config();
 
@@ -47,7 +55,7 @@ pub fn new() -> Result<Config, Box<dyn Error>> {
 pub fn read() -> Result<Config, Box<dyn Error>> {
     let path = get_config_path()?;
 
-    if Path::is_file(&path) {
+    if !Path::is_file(&path) {
         return new();
     }
 
@@ -55,12 +63,4 @@ pub fn read() -> Result<Config, Box<dyn Error>> {
     let config = toml::from_str(&data)?;
 
     Ok(config)
-}
-
-pub fn write(config: &Config) -> Result<(), Box<dyn Error>> {
-    let path = get_config_path()?;
-    let config = toml::to_string(config)?;
-    fs::write(path, config)?;
-
-    Ok(())
 }

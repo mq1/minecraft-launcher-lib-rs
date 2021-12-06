@@ -3,6 +3,7 @@ pub mod instances;
 pub mod launchermeta;
 pub mod config;
 pub mod util;
+pub mod accounts;
 
 #[cfg(test)]
 mod tests {
