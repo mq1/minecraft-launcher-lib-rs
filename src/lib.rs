@@ -4,6 +4,7 @@ pub mod launchermeta;
 pub mod config;
 pub mod util;
 pub mod accounts;
+pub mod libraries;
 
 #[cfg(test)]
 mod tests {

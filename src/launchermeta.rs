@@ -35,6 +35,7 @@ pub struct Downloads {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MinecraftMeta {
+    pub id: String,
     pub asset_index: AssetIndex,
     pub downloads: Downloads,
 }
