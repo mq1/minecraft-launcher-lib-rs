@@ -50,7 +50,7 @@ fn read() -> Result<Config, Box<dyn Error>> {
         return new();
     }
 
-    let data = fs::read_to_string(path)?;
+    let data = fs::read_to_string(&path)?;
     let config = toml::from_str(&data)?;
 
     Ok(config)
