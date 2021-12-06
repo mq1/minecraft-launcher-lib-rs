@@ -103,7 +103,7 @@ pub fn run_instance(name: &str) -> Result<(), Box<dyn Error>> {
     let config = read_config(name)?;
     let minecraft_meta = read_minecraft_manifest(&config.minecraft_version)?;
 
-    download_assets(&minecraft_meta.asset_index.url)?;
+    download_assets(&minecraft_meta.asset_index)?;
 
     Ok(())
 }

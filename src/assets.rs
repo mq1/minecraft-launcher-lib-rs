@@ -1,8 +1,9 @@
+use crate::launchermeta::AssetIndex;
 use crate::util::{download_file, get_base_dir};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
-use std::path::PathBuf;
+use std::{fs, path::{PathBuf, Path}};
 
 #[derive(Deserialize)]
 struct Assets {
@@ -14,10 +15,9 @@ struct Object {
     hash: String,
 }
 
-fn get_objects_dir() -> Result<PathBuf, Box<dyn Error>> {
+fn get_assets_dir() -> Result<PathBuf, Box<dyn Error>> {
     let path = get_base_dir()?
-        .join("assets")
-        .join("objects");
+        .join("assets");
 
     Ok(path)
 }
@@ -25,7 +25,8 @@ fn get_objects_dir() -> Result<PathBuf, Box<dyn Error>> {
 fn download_asset(hash: &str) -> Result<(), Box<dyn Error>> {
     let first2 = &hash[..2];
 
-    let path = get_objects_dir()?
+    let path = get_assets_dir()?
+        .join("objects")
         .join(&first2)
         .join(&hash);
 
@@ -39,10 +40,31 @@ fn download_asset(hash: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn download_assets(asset_index_url: &str) -> Result<(), Box<dyn Error>> {
-    let resp: Assets = ureq::get(&asset_index_url).call()?.into_json()?;
+fn get_asset_index_path(id: &str) -> Result<PathBuf, Box<dyn Error>> {
+    let index_path = get_assets_dir()?
+        .join("indexes")
+        .join(format!("{}.json", id));
 
-    let objects = resp.objects.values().collect::<Vec<&Object>>();
+    Ok(index_path)
+}
+
+fn read_asset_index(asset_index: &AssetIndex) -> Result<Vec<Object>, Box<dyn Error>> {
+    let path = get_asset_index_path(&asset_index.id)?;
+
+    if !Path::is_file(&path) {
+        download_file(&asset_index.url, &path)?;
+    }
+
+    let data = fs::read_to_string(&path)?;
+    let assets: Assets = toml::from_str(&data)?;
+    let objects = assets.objects.into_values().collect();
+
+    Ok(objects)
+}
+
+pub fn download_assets(asset_index: &AssetIndex) -> Result<(), Box<dyn Error>> {
+    let objects = read_asset_index(asset_index)?;
+
     for object in objects.iter() {
         download_asset(&object.hash)?;
     }
