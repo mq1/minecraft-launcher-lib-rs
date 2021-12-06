@@ -23,9 +23,20 @@ pub struct AssetIndex {
 }
 
 #[derive(Deserialize)]
+pub struct URLObject {
+    pub url: String,
+}
+
+#[derive(Deserialize)]
+pub struct Downloads {
+    pub client: URLObject,
+}
+
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MinecraftMeta {
     pub asset_index: AssetIndex,
+    pub downloads: Downloads,
 }
 
 fn get_minecraft_manifest_path(minecraft_version: &str) -> Result<PathBuf, Box<dyn Error>> {

@@ -2,6 +2,7 @@ use crate::assets::download_assets;
 use crate::config;
 use crate::launchermeta::download_minecraft_manifest;
 use crate::launchermeta::read_minecraft_manifest;
+use crate::util::download_file;
 use crate::util::get_base_dir;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -62,7 +63,7 @@ pub fn new_instance(
     minecraft_version_manifest_url: &str,
 ) -> Result<(), Box<dyn Error>> {
     let instance_dir = get_instance_path(name)?;
-    create_dir_all(instance_dir)?;
+    create_dir_all(&instance_dir)?;
 
     let config = Config {
         minecraft_version: minecraft_version.to_owned(),
@@ -70,6 +71,10 @@ pub fn new_instance(
     write_config(name, &config)?;
 
     download_minecraft_manifest(minecraft_version, minecraft_version_manifest_url)?;
+
+    // download client.jar
+    let client_url = read_minecraft_manifest(minecraft_version)?.downloads.client.url;
+    download_file(&client_url, &instance_dir.join("client.jar"))?;
 
     Ok(())
 }
