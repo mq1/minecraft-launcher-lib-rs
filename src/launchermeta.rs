@@ -33,11 +33,29 @@ pub struct Downloads {
 }
 
 #[derive(Deserialize)]
+pub struct Artifact {
+    pub path: String,
+    pub url: String,
+}
+
+#[derive(Deserialize)]
+pub struct LibDownloads {
+    pub artifact: Artifact,
+}
+
+#[derive(Deserialize)]
+pub struct Library {
+    pub downloads: LibDownloads,
+    pub name: String,
+}
+
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MinecraftMeta {
     pub id: String,
     pub asset_index: AssetIndex,
     pub downloads: Downloads,
+    pub libraries: Vec<Library>,
 }
 
 fn get_minecraft_manifest_path(minecraft_version: &str) -> Result<PathBuf, Box<dyn Error>> {
