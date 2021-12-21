@@ -3,7 +3,10 @@ use crate::util::{download_file, get_base_dir};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
-use std::{fs, path::{PathBuf, Path}};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 #[derive(Deserialize)]
 struct Assets {
@@ -16,8 +19,7 @@ struct Object {
 }
 
 fn get_assets_dir() -> Result<PathBuf, Box<dyn Error>> {
-    let path = get_base_dir()?
-        .join("assets");
+    let path = get_base_dir()?.join("assets");
 
     Ok(path)
 }
@@ -25,10 +27,7 @@ fn get_assets_dir() -> Result<PathBuf, Box<dyn Error>> {
 fn download_asset(hash: &str) -> Result<(), Box<dyn Error>> {
     let first2 = &hash[..2];
 
-    let path = get_assets_dir()?
-        .join("objects")
-        .join(&first2)
-        .join(&hash);
+    let path = get_assets_dir()?.join("objects").join(&first2).join(&hash);
 
     let url = format!(
         "https://resources.download.minecraft.net/{}/{}",

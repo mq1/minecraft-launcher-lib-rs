@@ -1,5 +1,9 @@
-use std::{path::{Path, PathBuf}, error::Error, fs};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::{
+    error::Error,
+    fs,
+    path::{Path, PathBuf},
+};
 
 use crate::util::get_base_dir;
 
@@ -7,12 +11,12 @@ use crate::util::get_base_dir;
 pub struct Account {
     name: String,
     id: String,
-    access_token: String
+    access_token: String,
 }
 
 #[derive(Serialize, Deserialize)]
 struct Config {
-    accounts: Vec<Account>
+    accounts: Vec<Account>,
 }
 
 fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
@@ -21,10 +25,8 @@ fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
     Ok(path)
 }
 
-fn get_new_config()  -> Config {
-    Config {
-        accounts: vec![]
-    }
+fn get_new_config() -> Config {
+    Config { accounts: vec![] }
 }
 
 fn write(config: &Config) -> Result<(), Box<dyn Error>> {
@@ -65,7 +67,7 @@ pub fn list() -> Result<Vec<Account>, Box<dyn Error>> {
 pub fn add(account: Account) -> Result<(), Box<dyn Error>> {
     let mut config = read()?;
     config.accounts.push(account);
-    
+
     write(&config)?;
 
     Ok(())

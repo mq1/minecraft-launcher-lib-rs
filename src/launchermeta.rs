@@ -2,7 +2,7 @@ use crate::util::{download_file, get_base_dir};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs::File;
-use std::path::{PathBuf, Path};
+use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize)]
 pub struct Version {
@@ -45,7 +45,7 @@ pub struct LibDownloads {
 
 #[derive(Deserialize)]
 pub struct Os {
-    pub name: String
+    pub name: String,
 }
 
 #[derive(Deserialize)]
@@ -58,7 +58,7 @@ pub struct Rule {
 pub struct Library {
     pub downloads: LibDownloads,
     pub name: String,
-    pub rules: Option<Vec<Rule>>
+    pub rules: Option<Vec<Rule>>,
 }
 
 #[derive(Deserialize)]

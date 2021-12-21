@@ -1,6 +1,12 @@
-use std::{error::Error, path::{PathBuf, Path}};
+use std::{
+    error::Error,
+    path::{Path, PathBuf},
+};
 
-use crate::{util::{download_file, get_base_dir}, launchermeta::{MinecraftMeta, Artifact, Library}};
+use crate::{
+    launchermeta::{Artifact, Library, MinecraftMeta},
+    util::{download_file, get_base_dir},
+};
 
 fn get_lib_dir() -> Result<PathBuf, Box<dyn Error>> {
     let path = get_base_dir()?.join("libraries");
@@ -23,8 +29,7 @@ fn download_client_jar(minecraft_meta: &MinecraftMeta) -> Result<(), Box<dyn Err
 
 fn download_artifact(artifact: &Artifact) -> Result<(), Box<dyn Error>> {
     let relative_path = Path::new(&artifact.path);
-    let path = get_lib_dir()?
-        .join(relative_path);
+    let path = get_lib_dir()?.join(relative_path);
 
     download_file(&artifact.url, &path)?;
 
@@ -55,7 +60,11 @@ fn is_valid_lib(lib: &&Library) -> bool {
 pub fn download_libraries(minecraft_meta: &MinecraftMeta) -> Result<(), Box<dyn Error>> {
     download_client_jar(minecraft_meta)?;
 
-    let libs: Vec<&Library> = minecraft_meta.libraries.iter().filter(|lib| is_valid_lib(lib)).collect();
+    let libs: Vec<&Library> = minecraft_meta
+        .libraries
+        .iter()
+        .filter(|lib| is_valid_lib(lib))
+        .collect();
     for lib in libs {
         download_artifact(&lib.downloads.artifact)?;
     }

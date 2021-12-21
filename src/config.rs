@@ -1,5 +1,5 @@
 use crate::util::get_base_dir;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
     fs,

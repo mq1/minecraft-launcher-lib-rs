@@ -1,10 +1,10 @@
+pub mod accounts;
 pub mod assets;
+pub mod config;
 pub mod instances;
 pub mod launchermeta;
-pub mod config;
-pub mod util;
-pub mod accounts;
 pub mod libraries;
+pub mod util;
 
 #[cfg(test)]
 mod tests {
