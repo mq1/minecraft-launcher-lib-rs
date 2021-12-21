@@ -1,5 +1,6 @@
 use crate::util::{download_file, get_base_dir};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::path::PathBuf;
@@ -41,6 +42,7 @@ pub struct Artifact {
 #[derive(Deserialize)]
 pub struct LibDownloads {
     pub artifact: Artifact,
+    pub classifiers: Option<HashMap<String, Artifact>>,
 }
 
 #[derive(Deserialize)]
@@ -58,6 +60,7 @@ pub struct Rule {
 pub struct Library {
     pub downloads: LibDownloads,
     pub name: String,
+    pub natives: Option<HashMap<String, String>>,
     pub rules: Option<Vec<Rule>>,
 }
 

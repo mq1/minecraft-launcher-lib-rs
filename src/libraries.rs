@@ -36,18 +36,18 @@ fn download_artifact(artifact: &Artifact) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn is_os(os: &str) -> bool {
-    let actual_os = std::env::consts::OS;
-    let actual_os = actual_os.replace("macos", "osx");
+fn get_os() -> String {
+    let os = std::env::consts::OS;
+    let os = os.replace("macos", "osx");
 
-    actual_os == String::from(os)
+    os
 }
 
-fn is_valid_lib(lib: &&Library) -> bool {
+fn is_valid_lib(lib: &&Library, os: &str) -> bool {
     if lib.rules.is_some() {
         for rule in lib.rules.as_ref().unwrap() {
             if rule.os.is_some() {
-                if rule.action.eq("disallow") && is_os(&rule.os.as_ref().unwrap().name) {
+                if rule.action.eq("disallow") && String::from(os) == String::from(&rule.os.as_ref().unwrap().name) {
                     return false;
                 }
             }
@@ -60,13 +60,24 @@ fn is_valid_lib(lib: &&Library) -> bool {
 pub fn download_libraries(minecraft_meta: &MinecraftMeta) -> Result<(), Box<dyn Error>> {
     download_client_jar(minecraft_meta)?;
 
+    let os = get_os();
+
     let libs: Vec<&Library> = minecraft_meta
         .libraries
         .iter()
-        .filter(|lib| is_valid_lib(lib))
+        .filter(|lib| is_valid_lib(lib, &os))
         .collect();
+
     for lib in libs {
         download_artifact(&lib.downloads.artifact)?;
+
+        if lib.natives.is_some() {
+            let natives = lib.natives.as_ref().unwrap();
+            if natives.contains_key(&os) {
+                let artifact = &lib.downloads.classifiers.as_ref().unwrap()[&natives[&os]];
+                download_artifact(artifact)?;
+            }
+        }
     }
 
     Ok(())
