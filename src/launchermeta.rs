@@ -2,7 +2,7 @@ use crate::util::{download_file, get_base_dir};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs::File;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 #[derive(Serialize, Deserialize)]
 pub struct Version {
@@ -44,9 +44,21 @@ pub struct LibDownloads {
 }
 
 #[derive(Deserialize)]
+pub struct Os {
+    pub name: String
+}
+
+#[derive(Deserialize)]
+pub struct Rule {
+    pub action: String,
+    pub os: Option<Os>,
+}
+
+#[derive(Deserialize)]
 pub struct Library {
     pub downloads: LibDownloads,
     pub name: String,
+    pub rules: Option<Vec<Rule>>
 }
 
 #[derive(Deserialize)]
@@ -84,10 +96,12 @@ pub fn download_minecraft_manifest(
 ) -> Result<(), Box<dyn Error>> {
     let minecraft_version_manifest_path = get_minecraft_manifest_path(minecraft_version)?;
 
-    download_file(
-        minecraft_version_manifest_url,
-        &minecraft_version_manifest_path,
-    )?;
+    if !minecraft_version_manifest_path.is_file() {
+        download_file(
+            minecraft_version_manifest_url,
+            &minecraft_version_manifest_path,
+        )?;
+    }
 
     Ok(())
 }
