@@ -64,24 +64,45 @@ fn get_valid_libs(minecraft_meta: &MinecraftMeta) -> Vec<&Library> {
         .collect()
 }
 
-pub fn download_libraries(minecraft_meta: &MinecraftMeta) -> Result<Vec<Library>, Box<dyn Error>> {
+fn get_native_artifact(lib: &&Library) -> Option<Artifact> {
+    if lib.natives.is_some() {
+        let natives = lib.natives.as_ref().unwrap();
+        if natives.contains_key(&os) {
+            let artifact = &lib.downloads.classifiers.as_ref().unwrap()[&natives[&os]];
+            Some(artifact)
+        }
+    }
+
+    None
+}
+
+fn get_artifacts(libs: Vec<&Library>) -> Vec<Artifact> {
+    libs
+        .iter()
+        .map(|lib| lib.downloads.artifact)
+        .collect()
+}
+
+fn get_native_artifacts(libs: Vec<&Library>) -> Vec<Artifact> {
+    libs
+        .iter()
+        .map(get_native_artifact)
+        .retain(|a| a.is_some())
+        .collect()
+}
+
+pub fn download_libraries(minecraft_meta: &MinecraftMeta) -> Result<(Vec<Artifact>, Vec<Artifact>), Box<dyn Error>> {
     download_client_jar(minecraft_meta)?;
 
     let os = get_os();
 
     let libs = get_valid_libs(minecraft_meta);
+    let artifacts = get_artifacts(&libs);
+    let native_artifacts = get_native_artifacts(&libs);
 
-    for lib in libs {
-        download_artifact(&lib.downloads.artifact)?;
-
-        if lib.natives.is_some() {
-            let natives = lib.natives.as_ref().unwrap();
-            if natives.contains_key(&os) {
-                let artifact = &lib.downloads.classifiers.as_ref().unwrap()[&natives[&os]];
-                download_artifact(artifact)?;
-            }
-        }
+    for artifact in artifacts.push(native_artifacts) {
+        download_artifact(native_artifact)?;
     }
 
-    Ok(libs)
+    Ok(artifacts, native_artifacts)
 }
