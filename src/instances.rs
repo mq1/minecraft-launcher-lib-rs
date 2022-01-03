@@ -3,6 +3,7 @@ use crate::config;
 use crate::launchermeta::download_minecraft_manifest;
 use crate::launchermeta::read_minecraft_manifest;
 use crate::libraries::download_libraries;
+use crate::libraries::get_valid_libs;
 use crate::util::get_base_dir;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -105,7 +106,7 @@ pub fn run_instance(name: &str) -> Result<(), Box<dyn Error>> {
     let minecraft_meta = read_minecraft_manifest(&config.minecraft_version)?;
 
     download_assets(&minecraft_meta.asset_index)?;
-    download_libraries(&minecraft_meta)?;
+    let libs = download_libraries(&minecraft_meta)?;
 
     Ok(())
 }

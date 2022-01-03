@@ -56,16 +56,20 @@ fn is_valid_lib(lib: &&Library) -> bool {
     (rules.len() == 1 && os.eq("osx")) || (rules.len() == 2 && os.ne("osx"))
 }
 
-pub fn download_libraries(minecraft_meta: &MinecraftMeta) -> Result<(), Box<dyn Error>> {
+fn get_valid_libs(minecraft_meta: &MinecraftMeta) -> Vec<&Library> {
+    minecraft_meta
+        .libraries
+        .iter()
+        .filter(is_valid_lib)
+        .collect()
+}
+
+pub fn download_libraries(minecraft_meta: &MinecraftMeta) -> Result<Vec<Library>, Box<dyn Error>> {
     download_client_jar(minecraft_meta)?;
 
     let os = get_os();
 
-    let libs: Vec<&Library> = minecraft_meta
-        .libraries
-        .iter()
-        .filter(is_valid_lib)
-        .collect();
+    let libs = get_valid_libs(minecraft_meta);
 
     for lib in libs {
         download_artifact(&lib.downloads.artifact)?;
@@ -79,5 +83,5 @@ pub fn download_libraries(minecraft_meta: &MinecraftMeta) -> Result<(), Box<dyn 
         }
     }
 
-    Ok(())
+    Ok(libs)
 }
