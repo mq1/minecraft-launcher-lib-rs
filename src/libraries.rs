@@ -45,14 +45,15 @@ fn get_os() -> String {
 
 // lazy/hacky implementation
 // it kinda works but is's not flexible
-fn is_valid_lib(lib: &&Library, os: &str) -> bool {
+fn is_valid_lib(lib: &&Library) -> bool {
     if lib.rules.is_none() {
         true
     }
 
     let rules = lib.rules.unwrap();
+    let os = get_os();
 
-    (rules.len() == 1 && get_os().eq("osx")) || (rules.len() == 2 && get_os().ne("osx"))
+    (rules.len() == 1 && os.eq("osx")) || (rules.len() == 2 && os.ne("osx"))
 }
 
 pub fn download_libraries(minecraft_meta: &MinecraftMeta) -> Result<(), Box<dyn Error>> {
@@ -63,7 +64,7 @@ pub fn download_libraries(minecraft_meta: &MinecraftMeta) -> Result<(), Box<dyn 
     let libs: Vec<&Library> = minecraft_meta
         .libraries
         .iter()
-        .filter(|lib| is_valid_lib(lib, &os))
+        .filter(is_valid_lib)
         .collect();
 
     for lib in libs {
