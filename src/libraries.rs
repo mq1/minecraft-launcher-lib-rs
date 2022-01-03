@@ -43,22 +43,16 @@ fn get_os() -> String {
     os
 }
 
-fn is_os(os: &string) -> bool {
-    os.eq(get_os())
-}
-
+// lazy/hacky implementation
+// it kinda works but is's not flexible
 fn is_valid_lib(lib: &&Library, os: &str) -> bool {
-    if lib.rules.is_some() {
-        for rule in lib.rules.as_ref().unwrap() {
-            if rule.os.is_some() {
-                if rule.action.eq("disallow") && is_os(&rule.os.as_ref().unwrap().name) {
-                    return false;
-                }
-            }
-        }
+    if lib.rules.is_none() {
+        true
     }
 
-    true
+    let rules = lib.rules.unwrap();
+
+    (rules.len() == 1 && get_os().eq("osx")) || (rules.len() == 2 && get_os().ne("osx"))
 }
 
 pub fn download_libraries(minecraft_meta: &MinecraftMeta) -> Result<(), Box<dyn Error>> {
