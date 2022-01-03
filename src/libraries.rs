@@ -43,11 +43,15 @@ fn get_os() -> String {
     os
 }
 
+fn is_os(os: &string) -> bool {
+    os.eq(get_os())
+}
+
 fn is_valid_lib(lib: &&Library, os: &str) -> bool {
     if lib.rules.is_some() {
         for rule in lib.rules.as_ref().unwrap() {
             if rule.os.is_some() {
-                if rule.action.eq("disallow") && String::from(os) == String::from(&rule.os.as_ref().unwrap().name) {
+                if rule.action.eq("disallow") && is_os(&rule.os.as_ref().unwrap().name) {
                     return false;
                 }
             }
