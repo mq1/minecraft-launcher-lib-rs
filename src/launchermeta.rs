@@ -33,7 +33,7 @@ pub struct Downloads {
     pub client: URLObject,
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct Artifact {
     pub path: String,
     pub url: String,

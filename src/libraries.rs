@@ -47,10 +47,10 @@ fn get_os() -> String {
 // it kinda works but is's not flexible
 fn is_valid_lib(lib: &&Library) -> bool {
     if lib.rules.is_none() {
-        true
+        return true;
     }
 
-    let rules = lib.rules.unwrap();
+    let rules = lib.rules.as_ref().unwrap();
     let os = get_os();
 
     (rules.len() == 1 && os.eq("osx")) || (rules.len() == 2 && os.ne("osx"))
@@ -65,44 +65,48 @@ fn get_valid_libs(minecraft_meta: &MinecraftMeta) -> Vec<&Library> {
 }
 
 fn get_native_artifact(lib: &&Library) -> Option<Artifact> {
+    let os = get_os();
+
     if lib.natives.is_some() {
         let natives = lib.natives.as_ref().unwrap();
         if natives.contains_key(&os) {
-            let artifact = &lib.downloads.classifiers.as_ref().unwrap()[&natives[&os]];
-            Some(artifact)
+            let artifact = lib.downloads.classifiers.as_ref().unwrap()[&natives[&os]].clone();
+            return Some(artifact);
         }
     }
 
     None
 }
 
-fn get_artifacts(libs: Vec<&Library>) -> Vec<Artifact> {
+fn get_artifacts(libs: &Vec<&Library>) -> Vec<Artifact> {
     libs
         .iter()
-        .map(|lib| lib.downloads.artifact)
+        .map(|lib| lib.downloads.artifact.clone())
         .collect()
 }
 
-fn get_native_artifacts(libs: Vec<&Library>) -> Vec<Artifact> {
+fn get_native_artifacts(libs: &Vec<&Library>) -> Vec<Artifact> {
     libs
         .iter()
         .map(get_native_artifact)
-        .retain(|a| a.is_some())
+        .filter_map(|a| a)
         .collect()
 }
 
 pub fn download_libraries(minecraft_meta: &MinecraftMeta) -> Result<(Vec<Artifact>, Vec<Artifact>), Box<dyn Error>> {
     download_client_jar(minecraft_meta)?;
 
-    let os = get_os();
-
     let libs = get_valid_libs(minecraft_meta);
     let artifacts = get_artifacts(&libs);
     let native_artifacts = get_native_artifacts(&libs);
 
-    for artifact in artifacts.push(native_artifacts) {
-        download_artifact(native_artifact)?;
+    for artifact in &artifacts {
+        download_artifact(artifact)?;
     }
 
-    Ok(artifacts, native_artifacts)
+    for artifact in &native_artifacts {
+        download_artifact(artifact)?;
+    }
+
+    Ok((artifacts, native_artifacts))
 }

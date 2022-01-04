@@ -3,7 +3,6 @@ use crate::config;
 use crate::launchermeta::download_minecraft_manifest;
 use crate::launchermeta::read_minecraft_manifest;
 use crate::libraries::download_libraries;
-use crate::libraries::get_valid_libs;
 use crate::util::get_base_dir;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
