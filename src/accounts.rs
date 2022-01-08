@@ -97,7 +97,13 @@ pub fn authorize_device() -> Result<(String, String, String), Box<dyn Error>> {
 }
 
 fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>> {
-    let resp: serde_json::Value = ureq::post("https://user.auth.xboxlive.com/user/authenticate")
+    #[derive(Deserialize)]
+    #[serde(rename_all = "PascalCase")]
+    struct Response {
+        token: String,
+    }
+
+    let resp: Response = ureq::post("https://user.auth.xboxlive.com/user/authenticate")
         .set("Accept", "application/json")
         .send_json(ureq::json!({
             "Properties": {
@@ -110,9 +116,7 @@ fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>
         }))?
         .into_json()?;
 
-    let xbl_token = resp["Token"].as_str().unwrap().to_string();
-
-    Ok(xbl_token)
+    Ok(resp.token)
 }
 
 fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String), Box<dyn Error>> {
