@@ -89,7 +89,7 @@ pub fn authorize_device() -> Result<(String, String, String), Box<dyn Error>> {
             .set("Content-Type", "application/x-www-form-urlencoded")
             .send_form(&[
                 ("client_id", CLIENT_ID),
-                ("scope", "XboxLive.signin offline_access")
+                ("scope", "XboxLive.signin offline_access"),
             ])?
             .into_json()?;
 
