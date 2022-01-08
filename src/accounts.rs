@@ -92,6 +92,7 @@ pub fn authorize_device() -> Result<(String, String, String), Box<dyn Error>> {
 
 fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>> {
     let resp: serde_json::Value = ureq::post("https://user.auth.xboxlive.com/user/authenticate")
+        .set("Accept", "application/json")
         .send_json(ureq::json!({
             "Properties": {
                 "AuthMethod": "RPS",
@@ -110,6 +111,7 @@ fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>
 
 fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String), Box<dyn Error>> {
     let resp: serde_json::Value = ureq::post("https://xsts.auth.xboxlive.com/xsts/authorize")
+        .set("Accept", "application/json")
         .send_json(ureq::json!({
             "Properties": {
                 "SandboxId": "RETAIL",
@@ -134,6 +136,7 @@ fn authenticate_with_minecraft(
 ) -> Result<String, Box<dyn Error>> {
     let resp: serde_json::Value =
         ureq::post("https://api.minecraftservices.com/authentication/login_with_xbox")
+            .set("Accept", "application/json")
             .send_json(ureq::json!({
                 "identityToken": format!("XBL3.0 x={};{}", user_hash, xsts_token)
             }))?
