@@ -79,15 +79,13 @@ fn add(account: Account) -> Result<(), Box<dyn Error>> {
 pub fn authorize_device() -> Result<(String, String, String), Box<dyn Error>> {
     let resp: serde_json::Value =
         ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode")
-            .send_form(&[
-                ("client_id", CLIENT_ID),
-                ("scope", "XboxLive.signin%20offline_access"),
-            ])?
+            .set("Content-Type", "application/x-www-form-urlencoded")
+            .send_string(&format!("client_id={}&scope=XboxLive.signin%20offline_access", CLIENT_ID))?
             .into_json()?;
 
-    let device_code = resp["device_code"].to_string();
-    let user_code = resp["user_code"].to_string();
-    let verification_uri = resp["verification_uri"].to_string();
+    let device_code = resp["device_code"].as_str().unwrap().to_string();
+    let user_code = resp["user_code"].as_str().unwrap().to_string();
+    let verification_uri = resp["verification_uri"].as_str().unwrap().to_string();
 
     Ok((device_code, user_code, verification_uri))
 }
@@ -105,7 +103,7 @@ fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>
         }))?
         .into_json()?;
 
-    let xbl_token = resp["Token"].to_string();
+    let xbl_token = resp["Token"].as_str().unwrap().to_string();
 
     Ok(xbl_token)
 }
@@ -124,8 +122,8 @@ fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String), Box<dyn E
         }))?
         .into_json()?;
 
-    let xsts_token = resp["Token"].to_string();
-    let user_hash = resp["DisplayClaims"]["xui"][0]["uhs"].to_string();
+    let xsts_token = resp["Token"].as_str().unwrap().to_string();
+    let user_hash = resp["DisplayClaims"]["xui"][0]["uhs"].as_str().unwrap().to_string();
 
     Ok((xsts_token, user_hash))
 }
@@ -141,7 +139,7 @@ fn authenticate_with_minecraft(
             }))?
             .into_json()?;
 
-    let mc_access_token = resp["access_token"].to_string();
+    let mc_access_token = resp["access_token"].as_str().unwrap().to_string();
 
     Ok(mc_access_token)
 }
@@ -169,11 +167,8 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
 
     loop {
         let auth = ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/token")
-            .send_form(&[
-                ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
-                ("client_id", CLIENT_ID),
-                ("device_code", device_code),
-            ]);
+            .set("Content-Type", "application/x-www-form-urlencoded")
+            .send_string(&format!("grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id={}&device_code={}", CLIENT_ID, device_code));
 
         match auth {
             Ok(response) => {
@@ -187,12 +182,13 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
 
                 break;
             }
-            Err(ureq::Error::Status(_code, response)) => {
+            Err(ureq::Error::Status(code, response)) => {
                 let resp: AuthenticationErrorResponse = response.into_json()?;
                 match resp.error.as_str() {
                     "authorization_pending" => thread::sleep(Duration::from_secs(5)),
                     _ => {
                         println!("Authentication error");
+                        println!("{} {}", code, resp.error);
                         // TODO handle other errors
                         // https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code#expected-errors
 
