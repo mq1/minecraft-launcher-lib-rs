@@ -87,10 +87,10 @@ pub fn authorize_device() -> Result<(String, String, String), Box<dyn Error>> {
     let resp: Response =
         ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode")
             .set("Content-Type", "application/x-www-form-urlencoded")
-            .send_string(&format!(
-                "client_id={}&scope=XboxLive.signin%20offline_access",
-                CLIENT_ID
-            ))?
+            .send_form(&[
+                ("client_id", CLIENT_ID),
+                ("scope", "XboxLive.signin offline_access")
+            ])?
             .into_json()?;
 
     Ok((resp.device_code, resp.user_code, resp.verification_uri))
