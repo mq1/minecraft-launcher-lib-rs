@@ -1,15 +1,17 @@
+use crate::util::get_base_dir;
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
     fs,
-    path::{Path, PathBuf}, thread, time::Duration,
+    path::{Path, PathBuf},
+    thread,
+    time::Duration,
 };
-use crate::util::get_base_dir;
 
 #[derive(Serialize, Deserialize)]
 pub struct Account {
     access_token: String,
-    ms_refresh_token: String
+    ms_refresh_token: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -75,12 +77,13 @@ fn add(account: Account) -> Result<(), Box<dyn Error>> {
 
 // https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code
 pub fn authorize_device() -> Result<(String, String, String), Box<dyn Error>> {
-    let resp: serde_json::Value = ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode")
-        .send_form(&[
-            ("client_id", CLIENT_ID),
-            ("scope", "XboxLive.signin%20offline_access")
-        ])?
-        .into_json()?;
+    let resp: serde_json::Value =
+        ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode")
+            .send_form(&[
+                ("client_id", CLIENT_ID),
+                ("scope", "XboxLive.signin%20offline_access"),
+            ])?
+            .into_json()?;
 
     let device_code = resp["device_code"].to_string();
     let user_code = resp["user_code"].to_string();
@@ -127,13 +130,17 @@ fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String), Box<dyn E
     Ok((xsts_token, user_hash))
 }
 
-fn authenticate_with_minecraft(xsts_token: &str, user_hash: &str) -> Result<String, Box<dyn Error>> {
-    let resp: serde_json::Value = ureq::post("https://api.minecraftservices.com/authentication/login_with_xbox")
-        .send_json(ureq::json!({
-            "identityToken": format!("XBL3.0 x={};{}", user_hash, xsts_token)
-        }))?
-        .into_json()?;
-    
+fn authenticate_with_minecraft(
+    xsts_token: &str,
+    user_hash: &str,
+) -> Result<String, Box<dyn Error>> {
+    let resp: serde_json::Value =
+        ureq::post("https://api.minecraftservices.com/authentication/login_with_xbox")
+            .send_json(ureq::json!({
+                "identityToken": format!("XBL3.0 x={};{}", user_hash, xsts_token)
+            }))?
+            .into_json()?;
+
     let mc_access_token = resp["access_token"].to_string();
 
     Ok(mc_access_token)
@@ -151,7 +158,7 @@ fn get_minecraft_access_token(ms_access_token: &str) -> Result<String, Box<dyn E
 pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
     #[derive(Deserialize)]
     struct AuthenticationErrorResponse {
-        error: String
+        error: String,
     }
 
     #[derive(Deserialize)]
@@ -165,28 +172,25 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
             .send_form(&[
                 ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
                 ("client_id", CLIENT_ID),
-                ("device_code", device_code)
+                ("device_code", device_code),
             ]);
 
-        match auth
-        {
+        match auth {
             Ok(response) => {
                 let resp: AuthenticationResponse = response.into_json()?;
                 let mc_access_token = get_minecraft_access_token(&resp.access_token)?;
 
                 add(Account {
                     access_token: mc_access_token,
-                    ms_refresh_token: resp.refresh_token
+                    ms_refresh_token: resp.refresh_token,
                 })?;
 
                 break;
-            },
+            }
             Err(ureq::Error::Status(_code, response)) => {
                 let resp: AuthenticationErrorResponse = response.into_json()?;
                 match resp.error.as_str() {
-                    "authorization_pending" => {
-                        thread::sleep(Duration::from_secs(5))
-                    },
+                    "authorization_pending" => thread::sleep(Duration::from_secs(5)),
                     _ => {
                         println!("Authentication error");
                         // TODO handle other errors
