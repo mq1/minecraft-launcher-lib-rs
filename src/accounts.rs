@@ -209,3 +209,18 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+#[derive(Deserialize)]
+pub struct UserProfile {
+    pub id: String,
+    pub name: String
+}
+
+pub fn get_user_profile(account: &Account) -> Result<UserProfile, Box<dyn Error>> {
+    let profile: UserProfile = ureq::get("https://api.minecraftservices.com/minecraft/profile")
+        .set("Authorization", &format!("Bearer {}", &account.access_token))
+        .call()?
+        .into_json()?;
+
+    Ok(profile)
+}
