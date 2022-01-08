@@ -11,7 +11,7 @@ use std::{
 #[derive(Serialize, Deserialize)]
 pub struct Account {
     access_token: String,
-    ms_refresh_token: String,
+    refresh_token: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -162,12 +162,6 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
         error: String,
     }
 
-    #[derive(Deserialize)]
-    struct AuthenticationResponse {
-        access_token: String,
-        refresh_token: String,
-    }
-
     loop {
         let auth = ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/token")
             .set("Content-Type", "application/x-www-form-urlencoded")
@@ -175,13 +169,8 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
 
         match auth {
             Ok(response) => {
-                let resp: AuthenticationResponse = response.into_json()?;
-                let mc_access_token = get_minecraft_access_token(&resp.access_token)?;
-
-                add(Account {
-                    access_token: mc_access_token,
-                    ms_refresh_token: resp.refresh_token,
-                })?;
+                let account: Account = response.into_json()?;
+                add(account)?;
 
                 break;
             }
@@ -215,11 +204,14 @@ pub struct UserProfile {
     pub name: String
 }
 
-pub fn get_user_profile(account: &Account) -> Result<UserProfile, Box<dyn Error>> {
+// returns user profile and access token
+pub fn get_user_profile(account: &Account) -> Result<(UserProfile, String), Box<dyn Error>> {
+    let mc_access_token = get_minecraft_access_token(&account.access_token)?;
+
     let profile: UserProfile = ureq::get("https://api.minecraftservices.com/minecraft/profile")
-        .set("Authorization", &format!("Bearer {}", &account.access_token))
+        .set("Authorization", &format!("Bearer {}", mc_access_token))
         .call()?
         .into_json()?;
 
-    Ok(profile)
+    Ok((profile, mc_access_token))
 }
