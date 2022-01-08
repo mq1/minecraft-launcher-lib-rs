@@ -77,17 +77,23 @@ fn add(account: Account) -> Result<(), Box<dyn Error>> {
 
 // https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code
 pub fn authorize_device() -> Result<(String, String, String), Box<dyn Error>> {
-    let resp: serde_json::Value =
+    #[derive(Deserialize)]
+    struct Response {
+        device_code: String,
+        user_code: String,
+        verification_uri: String,
+    }
+
+    let resp: Response =
         ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode")
             .set("Content-Type", "application/x-www-form-urlencoded")
-            .send_string(&format!("client_id={}&scope=XboxLive.signin%20offline_access", CLIENT_ID))?
+            .send_string(&format!(
+                "client_id={}&scope=XboxLive.signin%20offline_access",
+                CLIENT_ID
+            ))?
             .into_json()?;
 
-    let device_code = resp["device_code"].as_str().unwrap().to_string();
-    let user_code = resp["user_code"].as_str().unwrap().to_string();
-    let verification_uri = resp["verification_uri"].as_str().unwrap().to_string();
-
-    Ok((device_code, user_code, verification_uri))
+    Ok((resp.device_code, resp.user_code, resp.verification_uri))
 }
 
 fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>> {
@@ -125,7 +131,10 @@ fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String), Box<dyn E
         .into_json()?;
 
     let xsts_token = resp["Token"].as_str().unwrap().to_string();
-    let user_hash = resp["DisplayClaims"]["xui"][0]["uhs"].as_str().unwrap().to_string();
+    let user_hash = resp["DisplayClaims"]["xui"][0]["uhs"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     Ok((xsts_token, user_hash))
 }
@@ -201,7 +210,7 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
 #[derive(Deserialize)]
 pub struct UserProfile {
     pub id: String,
-    pub name: String
+    pub name: String,
 }
 
 // returns user profile and access token
