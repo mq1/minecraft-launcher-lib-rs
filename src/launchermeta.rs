@@ -1,4 +1,5 @@
-use crate::util::{download_file, get_base_dir};
+use crate::util::download_file;
+use crate::BASE_DIR;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
@@ -73,15 +74,16 @@ pub struct MinecraftMeta {
     pub libraries: Vec<Library>,
 }
 
-fn get_minecraft_manifest_path(minecraft_version: &str) -> Result<PathBuf, Box<dyn Error>> {
-    let file_name = format!("{}.json", minecraft_version);
+lazy_static! {
+    static ref MINECRAFT_MANIFESTS_DIR: PathBuf = BASE_DIR.join("meta").join("net.minecraft");
+}
 
-    let minecraft_version_manifest_path = get_base_dir()?
-        .join("meta")
-        .join("net.minecraft")
-        .join(file_name);
+fn get_minecraft_manifest_path(minecraft_version: &str) -> PathBuf {
+    let minecraft_version_manifest_path = MINECRAFT_MANIFESTS_DIR
+        .join(minecraft_version)
+        .with_extension("json");
 
-    Ok(minecraft_version_manifest_path.to_path_buf())
+    minecraft_version_manifest_path
 }
 
 pub fn get_minecraft_versions() -> Result<Vec<Version>, ureq::Error> {
@@ -97,7 +99,7 @@ pub fn download_minecraft_manifest(
     minecraft_version: &str,
     minecraft_version_manifest_url: &str,
 ) -> Result<(), Box<dyn Error>> {
-    let minecraft_version_manifest_path = get_minecraft_manifest_path(minecraft_version)?;
+    let minecraft_version_manifest_path = get_minecraft_manifest_path(minecraft_version);
 
     if !minecraft_version_manifest_path.is_file() {
         download_file(
@@ -110,7 +112,7 @@ pub fn download_minecraft_manifest(
 }
 
 pub fn read_minecraft_manifest(minecraft_version: &str) -> Result<MinecraftMeta, Box<dyn Error>> {
-    let minecraft_version_manifest_path = get_minecraft_manifest_path(minecraft_version)?;
+    let minecraft_version_manifest_path = get_minecraft_manifest_path(minecraft_version);
     let file = File::open(minecraft_version_manifest_path)?;
     let config = serde_json::from_reader(file)?;
 

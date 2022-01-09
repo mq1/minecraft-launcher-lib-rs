@@ -1,4 +1,4 @@
-use crate::util::get_base_dir;
+use crate::BASE_DIR;
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
@@ -20,7 +20,7 @@ pub struct Config {
 }
 
 lazy_static! {
-    static ref CONFIG_PATH: PathBuf = get_base_dir().unwrap().join("config.toml");
+    static ref CONFIG_PATH: PathBuf = BASE_DIR.join("config.toml");
 }
 
 pub fn get_default_config() -> Config {

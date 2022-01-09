@@ -3,7 +3,7 @@ use crate::config;
 use crate::launchermeta::download_minecraft_manifest;
 use crate::launchermeta::read_minecraft_manifest;
 use crate::libraries::download_libraries;
-use crate::util::get_base_dir;
+use crate::BASE_DIR;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs;
@@ -16,8 +16,12 @@ struct Config {
     minecraft_version: String,
 }
 
+lazy_static! {
+    static ref INSTANCES_DIR: PathBuf = BASE_DIR.join("instances");
+}
+
 fn get_instance_path(name: &str) -> Result<PathBuf, Box<dyn Error>> {
-    let path = get_base_dir()?.join("instances").join(name);
+    let path = INSTANCES_DIR.join(name);
 
     Ok(path)
 }
@@ -45,9 +49,7 @@ fn write_config(instance_name: &str, config: &Config) -> Result<(), Box<dyn Erro
 }
 
 pub fn get_instance_list() -> Result<Vec<String>, Box<dyn Error>> {
-    let dir = get_base_dir()?.join("instances");
-
-    let instance_list = read_dir(dir)?
+    let instance_list = read_dir(INSTANCES_DIR.as_path())?
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.file_name())
         .filter_map(|entry| entry.into_string().ok())

@@ -1,4 +1,4 @@
-use crate::util::get_base_dir;
+use crate::BASE_DIR;
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
@@ -22,7 +22,7 @@ struct Config {
 const CLIENT_ID: &str = "2000ea79-d993-4591-b9c4-e678f82ae1db";
 
 lazy_static! {
-    static ref ACCOUNTS_PATH: PathBuf = get_base_dir().unwrap().join("accounts.toml");
+    static ref ACCOUNTS_PATH: PathBuf = BASE_DIR.join("accounts.toml");
 }
 
 fn get_new_config() -> Config {

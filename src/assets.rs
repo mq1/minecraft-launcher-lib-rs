@@ -1,5 +1,6 @@
+use crate::BASE_DIR;
 use crate::launchermeta::AssetIndex;
-use crate::util::{download_file, get_base_dir};
+use crate::util::download_file;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
@@ -19,7 +20,7 @@ struct Object {
 }
 
 lazy_static! {
-    static ref ASSETS_DIR: PathBuf = get_base_dir().unwrap().join("assets");
+    static ref ASSETS_DIR: PathBuf = BASE_DIR.join("assets");
 }
 
 fn download_asset(hash: &str) -> Result<(), Box<dyn Error>> {

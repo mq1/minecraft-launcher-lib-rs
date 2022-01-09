@@ -1,26 +1,22 @@
-use std::{
-    error::Error,
-    path::{Path, PathBuf},
-};
-
 use crate::{
     launchermeta::{Artifact, Library, MinecraftMeta},
-    util::{download_file, get_base_dir},
+    util::download_file,
+    BASE_DIR,
 };
+use std::{error::Error, path::PathBuf};
 
-fn get_lib_dir() -> Result<PathBuf, Box<dyn Error>> {
-    let path = get_base_dir()?.join("libraries");
-
-    Ok(path)
+lazy_static! {
+    static ref LIBRARIES_DIR: PathBuf = BASE_DIR.join("libraries");
+    static ref MINECRAFT_CLIENTS_DIR: PathBuf =
+        LIBRARIES_DIR.join("com").join("mojang").join("minecraft");
+    static ref OS: String = std::env::consts::OS.replace("macos", "osx");
 }
 
 fn download_client_jar(minecraft_meta: &MinecraftMeta) -> Result<(), Box<dyn Error>> {
-    let path = get_lib_dir()?
-        .join("com")
-        .join("mojang")
-        .join("minecraft")
+    let path = MINECRAFT_CLIENTS_DIR
         .join(&minecraft_meta.id)
-        .join(format!("minecraft-{}-client.jar", &minecraft_meta.id));
+        .join(format!("minecraft-{}-client", &minecraft_meta.id))
+        .with_extension("jar");
 
     download_file(&minecraft_meta.downloads.client.url, &path)?;
 
@@ -28,19 +24,10 @@ fn download_client_jar(minecraft_meta: &MinecraftMeta) -> Result<(), Box<dyn Err
 }
 
 fn download_artifact(artifact: &Artifact) -> Result<(), Box<dyn Error>> {
-    let relative_path = Path::new(&artifact.path);
-    let path = get_lib_dir()?.join(relative_path);
-
+    let path = LIBRARIES_DIR.join(&artifact.path);
     download_file(&artifact.url, &path)?;
 
     Ok(())
-}
-
-fn get_os() -> String {
-    let os = std::env::consts::OS;
-    let os = os.replace("macos", "osx");
-
-    os
 }
 
 // lazy/hacky implementation
@@ -51,9 +38,8 @@ fn is_valid_lib(lib: &&Library) -> bool {
     }
 
     let rules = lib.rules.as_ref().unwrap();
-    let os = get_os();
 
-    (rules.len() == 1 && os.eq("osx")) || (rules.len() == 2 && os.ne("osx"))
+    (rules.len() == 1 && OS.eq("osx")) || (rules.len() == 2 && OS.ne("osx"))
 }
 
 fn get_valid_libs(minecraft_meta: &MinecraftMeta) -> Vec<&Library> {
@@ -65,12 +51,10 @@ fn get_valid_libs(minecraft_meta: &MinecraftMeta) -> Vec<&Library> {
 }
 
 fn get_native_artifact(lib: &&Library) -> Option<Artifact> {
-    let os = get_os();
-
     if lib.natives.is_some() {
         let natives = lib.natives.as_ref().unwrap();
-        if natives.contains_key(&os) {
-            let artifact = lib.downloads.classifiers.as_ref().unwrap()[&natives[&os]].clone();
+        if natives.contains_key(OS.as_str()) {
+            let artifact = lib.downloads.classifiers.as_ref().unwrap()[&natives[OS.as_str()]].clone();
             return Some(artifact);
         }
     }
@@ -79,21 +63,21 @@ fn get_native_artifact(lib: &&Library) -> Option<Artifact> {
 }
 
 fn get_artifacts(libs: &Vec<&Library>) -> Vec<Artifact> {
-    libs
-        .iter()
+    libs.iter()
         .map(|lib| lib.downloads.artifact.clone())
         .collect()
 }
 
 fn get_native_artifacts(libs: &Vec<&Library>) -> Vec<Artifact> {
-    libs
-        .iter()
+    libs.iter()
         .map(get_native_artifact)
         .filter_map(|a| a)
         .collect()
 }
 
-pub fn download_libraries(minecraft_meta: &MinecraftMeta) -> Result<(Vec<Artifact>, Vec<Artifact>), Box<dyn Error>> {
+pub fn download_libraries(
+    minecraft_meta: &MinecraftMeta,
+) -> Result<(Vec<Artifact>, Vec<Artifact>), Box<dyn Error>> {
     download_client_jar(minecraft_meta)?;
 
     let libs = get_valid_libs(minecraft_meta);
