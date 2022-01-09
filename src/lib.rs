@@ -16,7 +16,7 @@ pub mod libraries;
 extern crate lazy_static;
 
 lazy_static! {
-    static ref BASE_DIR: PathBuf = ProjectDirs::from("eu", "mq1", "runmc")
+    pub static ref BASE_DIR: PathBuf = ProjectDirs::from("eu", "mq1", "runmc")
         .unwrap()
         .data_dir()
         .to_path_buf();
