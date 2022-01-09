@@ -96,6 +96,7 @@ pub fn authorize_device() -> Result<(String, String, String), Box<dyn Error>> {
     Ok((resp.device_code, resp.user_code, resp.verification_uri))
 }
 
+/// returns xbl_token
 fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>> {
     #[derive(Deserialize)]
     #[serde(rename_all = "PascalCase")]
@@ -119,7 +120,7 @@ fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>
     Ok(resp.token)
 }
 
-// returns xsts token and user hash
+/// returns xsts_token and user_hash
 fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String), Box<dyn Error>> {
     #[derive(Deserialize)]
     struct Xui {
@@ -159,7 +160,12 @@ fn authenticate_with_minecraft(
     xsts_token: &str,
     user_hash: &str,
 ) -> Result<String, Box<dyn Error>> {
-    let resp: serde_json::Value =
+    #[derive(Deserialize)]
+    struct Response {
+        access_token: String,
+    }
+
+    let resp: Response =
         ureq::post("https://api.minecraftservices.com/authentication/login_with_xbox")
             .set("Accept", "application/json")
             .send_json(ureq::json!({
@@ -167,9 +173,7 @@ fn authenticate_with_minecraft(
             }))?
             .into_json()?;
 
-    let mc_access_token = resp["access_token"].as_str().unwrap().to_string();
-
-    Ok(mc_access_token)
+    Ok(resp.access_token)
 }
 
 fn get_minecraft_access_token(ms_access_token: &str) -> Result<String, Box<dyn Error>> {
