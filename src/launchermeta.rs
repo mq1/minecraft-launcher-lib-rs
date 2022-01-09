@@ -1,6 +1,6 @@
-use crate::util::download_file;
-use crate::BASE_DIR;
+use crate::{BASE_DIR, download_file};
 use serde::{Deserialize, Serialize};
+use url::Url;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
@@ -10,7 +10,7 @@ use std::path::PathBuf;
 pub struct Version {
     pub id: String,
     pub r#type: String,
-    pub url: String,
+    pub url: Url,
 }
 
 #[derive(Deserialize)]
@@ -21,12 +21,12 @@ struct VersionManifest {
 #[derive(Deserialize)]
 pub struct AssetIndex {
     pub id: String,
-    pub url: String,
+    pub url: Url,
 }
 
 #[derive(Deserialize)]
 pub struct URLObject {
-    pub url: String,
+    pub url: Url,
 }
 
 #[derive(Deserialize)]
@@ -37,7 +37,7 @@ pub struct Downloads {
 #[derive(Clone, Deserialize)]
 pub struct Artifact {
     pub path: String,
-    pub url: String,
+    pub url: Url,
 }
 
 #[derive(Deserialize)]
@@ -97,7 +97,7 @@ pub fn get_minecraft_versions() -> Result<Vec<Version>, ureq::Error> {
 
 pub fn download_minecraft_manifest(
     minecraft_version: &str,
-    minecraft_version_manifest_url: &str,
+    minecraft_version_manifest_url: &Url,
 ) -> Result<(), Box<dyn Error>> {
     let minecraft_version_manifest_path = get_minecraft_manifest_path(minecraft_version);
 

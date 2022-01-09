@@ -1,5 +1,6 @@
 use crate::BASE_DIR;
 use serde::{Deserialize, Serialize};
+use url::Url;
 use std::{
     error::Error,
     fs,
@@ -22,7 +23,7 @@ struct Config {
 const CLIENT_ID: &str = "2000ea79-d993-4591-b9c4-e678f82ae1db";
 
 lazy_static! {
-    static ref ACCOUNTS_PATH: PathBuf = BASE_DIR.join("accounts.toml");
+    static ref ACCOUNTS_PATH: PathBuf = BASE_DIR.join("accounts").with_extension("toml");
 }
 
 fn get_new_config() -> Config {
@@ -38,7 +39,6 @@ fn write(config: &Config) -> Result<(), Box<dyn Error>> {
 
 fn new() -> Result<Config, Box<dyn Error>> {
     let config = get_new_config();
-
     write(&config)?;
 
     Ok(config)
@@ -71,12 +71,12 @@ fn add(account: Account) -> Result<(), Box<dyn Error>> {
 }
 
 // https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code
-pub fn authorize_device() -> Result<(String, String, String), Box<dyn Error>> {
+pub fn authorize_device() -> Result<(String, String, Url), Box<dyn Error>> {
     #[derive(Deserialize)]
     struct Response {
         device_code: String,
         user_code: String,
-        verification_uri: String,
+        verification_uri: Url,
     }
 
     let resp: Response =

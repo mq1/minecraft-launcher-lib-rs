@@ -1,6 +1,6 @@
 use crate::{
+    download_file,
     launchermeta::{Artifact, Library, MinecraftMeta},
-    util::download_file,
     BASE_DIR,
 };
 use std::{error::Error, path::PathBuf};
@@ -54,7 +54,8 @@ fn get_native_artifact(lib: &&Library) -> Option<Artifact> {
     if lib.natives.is_some() {
         let natives = lib.natives.as_ref().unwrap();
         if natives.contains_key(OS.as_str()) {
-            let artifact = lib.downloads.classifiers.as_ref().unwrap()[&natives[OS.as_str()]].clone();
+            let artifact =
+                lib.downloads.classifiers.as_ref().unwrap()[&natives[OS.as_str()]].clone();
             return Some(artifact);
         }
     }

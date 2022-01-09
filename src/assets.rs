@@ -1,6 +1,5 @@
-use crate::BASE_DIR;
 use crate::launchermeta::AssetIndex;
-use crate::util::download_file;
+use crate::{download_file, BASE_DIR};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
@@ -8,6 +7,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
+use url::Url;
 
 #[derive(Deserialize)]
 struct Assets {
@@ -21,17 +21,17 @@ struct Object {
 
 lazy_static! {
     static ref ASSETS_DIR: PathBuf = BASE_DIR.join("assets");
+    static ref OBJECTS_DIR: PathBuf = ASSETS_DIR.join("objects");
+    static ref INDEXES_DIR: PathBuf = ASSETS_DIR.join("indexes");
 }
 
 fn download_asset(hash: &str) -> Result<(), Box<dyn Error>> {
     let first2 = &hash[..2];
 
-    let path = ASSETS_DIR.join("objects").join(&first2).join(&hash);
-
-    let url = format!(
-        "https://resources.download.minecraft.net/{}/{}",
-        first2, hash
-    );
+    let path = OBJECTS_DIR.join(&first2).join(&hash);
+    let url = Url::parse("https://resources.download.minecraft.net/")?
+        .join(first2)?
+        .join(hash)?;
 
     download_file(&url, &path)?;
 
@@ -39,7 +39,7 @@ fn download_asset(hash: &str) -> Result<(), Box<dyn Error>> {
 }
 
 fn get_asset_index_path(id: &str) -> Result<PathBuf, Box<dyn Error>> {
-    let index_path = ASSETS_DIR.join("indexes").join(format!("{}.json", id));
+    let index_path = INDEXES_DIR.join(id).with_extension("json");
 
     Ok(index_path)
 }

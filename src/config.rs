@@ -20,7 +20,7 @@ pub struct Config {
 }
 
 lazy_static! {
-    static ref CONFIG_PATH: PathBuf = BASE_DIR.join("config.toml");
+    static ref CONFIG_PATH: PathBuf = BASE_DIR.join("config").with_extension("toml");
 }
 
 pub fn get_default_config() -> Config {
@@ -43,7 +43,6 @@ pub fn write(config: &Config) -> Result<(), Box<dyn Error>> {
 
 pub fn new() -> Result<Config, Box<dyn Error>> {
     let config = get_default_config();
-
     write(&config)?;
 
     Ok(config)

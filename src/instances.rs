@@ -5,6 +5,7 @@ use crate::launchermeta::read_minecraft_manifest;
 use crate::libraries::download_libraries;
 use crate::BASE_DIR;
 use serde::{Deserialize, Serialize};
+use url::Url;
 use std::error::Error;
 use std::fs;
 use std::fs::{create_dir_all, read_dir};
@@ -27,7 +28,9 @@ fn get_instance_path(name: &str) -> Result<PathBuf, Box<dyn Error>> {
 }
 
 fn get_config_path(instance_name: &str) -> Result<PathBuf, Box<dyn Error>> {
-    let path = get_instance_path(instance_name)?.join("config.toml");
+    let path = get_instance_path(instance_name)?
+        .join("config")
+        .with_extension("toml");
 
     Ok(path)
 }
@@ -62,7 +65,7 @@ pub fn get_instance_list() -> Result<Vec<String>, Box<dyn Error>> {
 pub fn new_instance(
     name: &str,
     minecraft_version: &str,
-    minecraft_version_manifest_url: &str,
+    minecraft_version_manifest_url: &Url,
 ) -> Result<(), Box<dyn Error>> {
     let instance_dir = get_instance_path(name)?;
     create_dir_all(&instance_dir)?;
