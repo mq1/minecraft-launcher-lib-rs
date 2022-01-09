@@ -10,7 +10,7 @@ use std::{
 };
 
 #[derive(Serialize, Deserialize)]
-pub struct Account {
+struct Account {
     access_token: String,
     refresh_token: String,
 }
@@ -53,12 +53,6 @@ fn read() -> Result<Config, Box<dyn Error>> {
     let config = toml::from_str(&data)?;
 
     Ok(config)
-}
-
-pub fn list() -> Result<Vec<Account>, Box<dyn Error>> {
-    let config = read()?;
-
-    Ok(config.accounts)
 }
 
 fn add(account: Account) -> Result<(), Box<dyn Error>> {
@@ -227,16 +221,41 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
 pub struct UserProfile {
     pub id: String,
     pub name: String,
+    pub access_token: String
 }
 
-// returns user profile and access token
-pub fn get_user_profile(account: &Account) -> Result<(UserProfile, String), Box<dyn Error>> {
+/// returns user profile and access token
+fn get_user_profile(account: &Account) -> Result<UserProfile, Box<dyn Error>> {
     let mc_access_token = get_minecraft_access_token(&account.access_token)?;
 
-    let profile: UserProfile = ureq::get("https://api.minecraftservices.com/minecraft/profile")
+    #[derive(Deserialize)]
+    struct Response {
+        pub id: String,
+        pub name: String,
+    }
+
+    let resp: Response = ureq::get("https://api.minecraftservices.com/minecraft/profile")
         .set("Authorization", &format!("Bearer {}", mc_access_token))
         .call()?
         .into_json()?;
 
-    Ok((profile, mc_access_token))
+    let user_profile = UserProfile {
+        id: resp.id,
+        name: resp.name,
+        access_token: mc_access_token
+    };
+
+    Ok(user_profile)
+}
+
+pub fn list_user_profiles() -> Result<Vec<UserProfile>, Box<dyn Error>> {
+    let accounts = read()?.accounts;
+    let mut user_profiles = vec![];
+
+    for account in accounts {
+        let user_profile = get_user_profile(&account)?;
+        user_profiles.push(user_profile);
+    }
+
+    Ok(user_profiles)
 }
