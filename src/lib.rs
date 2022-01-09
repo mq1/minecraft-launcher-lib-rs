@@ -6,6 +6,9 @@ pub mod launchermeta;
 pub mod libraries;
 pub mod util;
 
+#[macro_use]
+extern crate lazy_static;
+
 #[cfg(test)]
 mod tests {
     #[test]

@@ -21,10 +21,8 @@ struct Config {
 
 const CLIENT_ID: &str = "2000ea79-d993-4591-b9c4-e678f82ae1db";
 
-fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
-    let path = get_base_dir()?.join("accounts.toml");
-
-    Ok(path)
+lazy_static! {
+    static ref CONFIG_PATH: PathBuf = get_base_dir().unwrap().join("accounts.toml");
 }
 
 fn get_new_config() -> Config {
@@ -32,9 +30,8 @@ fn get_new_config() -> Config {
 }
 
 fn write(config: &Config) -> Result<(), Box<dyn Error>> {
-    let path = get_config_path()?;
     let config = toml::to_string(config)?;
-    fs::write(path, config)?;
+    fs::write(CONFIG_PATH.as_path(), config)?;
 
     Ok(())
 }
@@ -48,13 +45,11 @@ fn new() -> Result<Config, Box<dyn Error>> {
 }
 
 fn read() -> Result<Config, Box<dyn Error>> {
-    let path = get_config_path()?;
-
-    if !Path::is_file(&path) {
+    if !Path::is_file(CONFIG_PATH.as_path()) {
         return new();
     }
 
-    let data = fs::read_to_string(&path)?;
+    let data = fs::read_to_string(CONFIG_PATH.as_path())?;
     let config = toml::from_str(&data)?;
 
     Ok(config)
