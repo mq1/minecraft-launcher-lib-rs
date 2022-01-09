@@ -18,16 +18,14 @@ struct Object {
     hash: String,
 }
 
-fn get_assets_dir() -> Result<PathBuf, Box<dyn Error>> {
-    let path = get_base_dir()?.join("assets");
-
-    Ok(path)
+lazy_static! {
+    static ref ASSETS_DIR: PathBuf = get_base_dir().unwrap().join("assets");
 }
 
 fn download_asset(hash: &str) -> Result<(), Box<dyn Error>> {
     let first2 = &hash[..2];
 
-    let path = get_assets_dir()?.join("objects").join(&first2).join(&hash);
+    let path = ASSETS_DIR.join("objects").join(&first2).join(&hash);
 
     let url = format!(
         "https://resources.download.minecraft.net/{}/{}",
@@ -40,9 +38,7 @@ fn download_asset(hash: &str) -> Result<(), Box<dyn Error>> {
 }
 
 fn get_asset_index_path(id: &str) -> Result<PathBuf, Box<dyn Error>> {
-    let index_path = get_assets_dir()?
-        .join("indexes")
-        .join(format!("{}.json", id));
+    let index_path = ASSETS_DIR.join("indexes").join(format!("{}.json", id));
 
     Ok(index_path)
 }
