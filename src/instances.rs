@@ -12,7 +12,6 @@ use std::fs::{create_dir_all, read_dir};
 use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 struct Config {
     minecraft_version: String,
 }
