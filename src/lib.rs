@@ -22,7 +22,7 @@ lazy_static! {
             .data_dir()
             .to_path_buf();
 
-            fs::create_dir_all(&dir).unwrap();
+        fs::create_dir_all(&dir).unwrap();
 
         dir
     };
