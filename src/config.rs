@@ -20,7 +20,7 @@ pub struct Config {
 }
 
 lazy_static! {
-    static ref CONFIG_PATH: PathBuf = BASE_DIR.join("config").with_extension("toml");
+    pub static ref CONFIG_PATH: PathBuf = BASE_DIR.join("config").with_extension("toml");
 }
 
 pub fn get_default_config() -> Config {
