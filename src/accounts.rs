@@ -119,8 +119,26 @@ fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>
     Ok(resp.token)
 }
 
+// returns xsts token and user hash
 fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String), Box<dyn Error>> {
-    let resp: serde_json::Value = ureq::post("https://xsts.auth.xboxlive.com/xsts/authorize")
+    #[derive(Deserialize)]
+    struct Xui {
+        uhs: String,
+    }
+
+    #[derive(Deserialize)]
+    struct DisplayClaims {
+        xui: Vec<Xui>,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "PascalCase")]
+    struct Response {
+        token: String,
+        display_claims: DisplayClaims,
+    }
+
+    let mut resp: Response = ureq::post("https://xsts.auth.xboxlive.com/xsts/authorize")
         .set("Accept", "application/json")
         .send_json(ureq::json!({
             "Properties": {
@@ -134,13 +152,7 @@ fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String), Box<dyn E
         }))?
         .into_json()?;
 
-    let xsts_token = resp["Token"].as_str().unwrap().to_string();
-    let user_hash = resp["DisplayClaims"]["xui"][0]["uhs"]
-        .as_str()
-        .unwrap()
-        .to_string();
-
-    Ok((xsts_token, user_hash))
+    Ok((resp.token, resp.display_claims.xui.remove(0).uhs))
 }
 
 fn authenticate_with_minecraft(
