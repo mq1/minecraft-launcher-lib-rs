@@ -156,6 +156,7 @@ fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String), Box<dyn E
     Ok((resp.token, resp.display_claims.xui.remove(0).uhs))
 }
 
+/// returns mc_access_token
 fn authenticate_with_minecraft(
     xsts_token: &str,
     user_hash: &str,
