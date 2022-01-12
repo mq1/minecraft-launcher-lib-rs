@@ -3,10 +3,11 @@ use crate::{
     launchermeta::{Artifact, Library, MinecraftMeta},
     BASE_DIR,
 };
-use std::{error::Error, path::PathBuf};
+use std::{error::Error, fs, io, path::PathBuf};
 
 lazy_static! {
     static ref LIBRARIES_DIR: PathBuf = BASE_DIR.join("libraries");
+    static ref NATIVES_TMP_DIR: PathBuf = BASE_DIR.join("natives-tmp");
     static ref MINECRAFT_CLIENTS_DIR: PathBuf =
         LIBRARIES_DIR.join("com").join("mojang").join("minecraft");
     static ref OS: String = std::env::consts::OS.replace("macos", "osx");
@@ -74,6 +75,41 @@ fn get_native_artifacts(libs: &Vec<&Library>) -> Vec<Artifact> {
         .map(get_native_artifact)
         .filter_map(|a| a)
         .collect()
+}
+
+pub fn extract_natives(native_artifacts: &Vec<Artifact>) -> Result<PathBuf, Box<dyn Error>> {
+    fs::remove_dir_all(NATIVES_TMP_DIR.as_path())?;
+    fs::create_dir_all(NATIVES_TMP_DIR.as_path())?;
+
+    for artifact in native_artifacts {
+        let path = LIBRARIES_DIR.join(&artifact.path);
+        let jarfile = fs::File::open(path)?;
+
+        let mut archive = zip::ZipArchive::new(jarfile)?;
+
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i)?;
+
+            let outpath = match file.enclosed_name() {
+                Some(path) => NATIVES_TMP_DIR.join(path),
+                None => continue,
+            };
+
+            if (&*file.name()).ends_with('/') {
+                fs::create_dir_all(&outpath)?;
+            } else {
+                if let Some(p) = outpath.parent() {
+                    if !p.exists() {
+                        fs::create_dir_all(&p)?;
+                    }
+                }
+                let mut outfile = fs::File::create(&outpath)?;
+                io::copy(&mut file, &mut outfile)?;
+            }
+        }
+    }
+
+    Ok(NATIVES_TMP_DIR.as_path().into())
 }
 
 pub fn download_libraries(
