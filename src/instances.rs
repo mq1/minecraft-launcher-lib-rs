@@ -4,6 +4,7 @@ use crate::launchermeta::download_minecraft_manifest;
 use crate::launchermeta::read_minecraft_manifest;
 use crate::libraries::download_libraries;
 use crate::BASE_DIR;
+use crate::libraries::extract_natives;
 use serde::{Deserialize, Serialize};
 use url::Url;
 use std::error::Error;
@@ -110,6 +111,7 @@ pub fn run_instance(name: &str) -> Result<(), Box<dyn Error>> {
 
     download_assets(&minecraft_meta.asset_index)?;
     let (artifacts, native_artifacts) = download_libraries(&minecraft_meta)?;
+    let natives_dir = extract_natives(&native_artifacts)?;
 
     Ok(())
 }
