@@ -5,7 +5,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     thread,
-    time::Duration,
+    time::Duration, collections::HashMap,
 };
 use url::Url;
 
@@ -17,17 +17,18 @@ struct Account {
 
 #[derive(Serialize, Deserialize)]
 struct Config {
-    accounts: Vec<Account>,
+    accounts: HashMap<String, Account>,
 }
 
 const CLIENT_ID: &str = "2000ea79-d993-4591-b9c4-e678f82ae1db";
+const SCOPE: &str = "XboxLive.signin offline_access https://graph.microsoft.com/user.read";
 
 lazy_static! {
     static ref ACCOUNTS_PATH: PathBuf = BASE_DIR.join("accounts").with_extension("toml");
 }
 
 fn get_new_config() -> Config {
-    Config { accounts: vec![] }
+    Config { accounts: HashMap::new() }
 }
 
 fn write(config: &Config) -> Result<(), Box<dyn Error>> {
@@ -56,8 +57,18 @@ fn read() -> Result<Config, Box<dyn Error>> {
 }
 
 fn add(account: Account) -> Result<(), Box<dyn Error>> {
+    #[derive(Deserialize)]
+    struct Response {
+        mail: String,
+    }
+
+    let resp: Response = ureq::get("https://graph.microsoft.com/v1.0/me")
+        .set("Authorization", &format!("Bearer {}", account.access_token))
+        .call()?
+        .into_json()?;
+
     let mut config = read()?;
-    config.accounts.push(account);
+    config.accounts.insert(resp.mail, account);
 
     write(&config)?;
 
@@ -75,14 +86,21 @@ pub fn authorize_device() -> Result<(String, String, Url), Box<dyn Error>> {
 
     let resp: Response =
         ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode")
-            .set("Content-Type", "application/x-www-form-urlencoded")
-            .send_form(&[
-                ("client_id", CLIENT_ID),
-                ("scope", "XboxLive.signin offline_access"),
-            ])?
+            .send_form(&[("client_id", CLIENT_ID), ("scope", SCOPE)])?
             .into_json()?;
 
     Ok((resp.device_code, resp.user_code, resp.verification_uri))
+}
+
+fn refresh_token(account: &Account) -> Result<(), Box<dyn Error>> {
+    ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/token").send_form(&[
+        ("client_id", CLIENT_ID),
+        ("scope", SCOPE),
+        ("refresh_token", &account.refresh_token),
+        ("grant_type", "refresh_token"),
+    ])?;
+
+    Ok(())
 }
 
 /// returns xbl_token
@@ -251,14 +269,9 @@ fn get_user_profile(account: &Account) -> Result<UserProfile, Box<dyn Error>> {
     Ok(user_profile)
 }
 
-pub fn list_user_profiles() -> Result<Vec<UserProfile>, Box<dyn Error>> {
+pub fn list_user_profiles() -> Result<Vec<String>, Box<dyn Error>> {
     let accounts = read()?.accounts;
-    let mut user_profiles = vec![];
+    let emails = accounts.keys().cloned().collect();
 
-    for account in accounts {
-        let user_profile = get_user_profile(&account)?;
-        user_profiles.push(user_profile);
-    }
-
-    Ok(user_profiles)
+    Ok(emails)
 }
