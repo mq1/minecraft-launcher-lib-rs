@@ -269,7 +269,7 @@ fn get_user_profile(account: &Account) -> Result<UserProfile, Box<dyn Error>> {
     Ok(user_profile)
 }
 
-pub fn list_user_profiles() -> Result<Vec<String>, Box<dyn Error>> {
+pub fn list() -> Result<Vec<String>, Box<dyn Error>> {
     let accounts = read()?.accounts;
     let emails = accounts.keys().cloned().collect();
 
