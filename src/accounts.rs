@@ -1,6 +1,5 @@
 use crate::BASE_DIR;
 use serde::{Deserialize, Serialize};
-use url::Url;
 use std::{
     error::Error,
     fs,
@@ -8,6 +7,7 @@ use std::{
     thread,
     time::Duration,
 };
+use url::Url;
 
 #[derive(Serialize, Deserialize)]
 struct Account {
@@ -183,8 +183,11 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
 
     loop {
         let auth = ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/token")
-            .set("Content-Type", "application/x-www-form-urlencoded")
-            .send_string(&format!("grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id={}&device_code={}", CLIENT_ID, device_code));
+            .send_form(&[
+                ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
+                ("client_id", CLIENT_ID),
+                ("device_code", device_code),
+            ]);
 
         match auth {
             Ok(response) => {
@@ -221,7 +224,7 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
 pub struct UserProfile {
     pub id: String,
     pub name: String,
-    pub access_token: String
+    pub access_token: String,
 }
 
 /// returns user profile and access token
@@ -242,7 +245,7 @@ fn get_user_profile(account: &Account) -> Result<UserProfile, Box<dyn Error>> {
     let user_profile = UserProfile {
         id: resp.id,
         name: resp.name,
-        access_token: mc_access_token
+        access_token: mc_access_token,
     };
 
     Ok(user_profile)
