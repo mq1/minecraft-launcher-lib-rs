@@ -5,30 +5,32 @@ use std::{
     fs,
     path::{Path, PathBuf},
     thread,
-    time::Duration, collections::HashMap,
+    time::Duration,
 };
 use url::Url;
 
 #[derive(Serialize, Deserialize)]
-struct Account {
+pub struct Account {
     access_token: String,
     refresh_token: String,
 }
 
 #[derive(Serialize, Deserialize)]
 struct Config {
-    accounts: HashMap<String, Account>,
+    accounts: Vec<Account>,
 }
 
 const CLIENT_ID: &str = "2000ea79-d993-4591-b9c4-e678f82ae1db";
-const SCOPE: &str = "XboxLive.signin offline_access https://graph.microsoft.com/user.read";
+const SCOPE: &str = "XboxLive.signin offline_access";
 
 lazy_static! {
     static ref ACCOUNTS_PATH: PathBuf = BASE_DIR.join("accounts").with_extension("toml");
 }
 
 fn get_new_config() -> Config {
-    Config { accounts: HashMap::new() }
+    Config {
+        accounts: Vec::new(),
+    }
 }
 
 fn write(config: &Config) -> Result<(), Box<dyn Error>> {
@@ -57,18 +59,8 @@ fn read() -> Result<Config, Box<dyn Error>> {
 }
 
 fn add(account: Account) -> Result<(), Box<dyn Error>> {
-    #[derive(Deserialize)]
-    struct Response {
-        mail: String,
-    }
-
-    let resp: Response = ureq::get("https://graph.microsoft.com/v1.0/me")
-        .set("Authorization", &format!("Bearer {}", account.access_token))
-        .call()?
-        .into_json()?;
-
     let mut config = read()?;
-    config.accounts.insert(resp.mail, account);
+    config.accounts.push(account);
 
     write(&config)?;
 
@@ -242,36 +234,28 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
 pub struct UserProfile {
     pub id: String,
     pub name: String,
-    pub access_token: String,
 }
 
 /// returns user profile and access token
 fn get_user_profile(account: &Account) -> Result<UserProfile, Box<dyn Error>> {
     let mc_access_token = get_minecraft_access_token(&account.access_token)?;
 
-    #[derive(Deserialize)]
-    struct Response {
-        pub id: String,
-        pub name: String,
-    }
-
-    let resp: Response = ureq::get("https://api.minecraftservices.com/minecraft/profile")
+    let resp: UserProfile = ureq::get("https://api.minecraftservices.com/minecraft/profile")
         .set("Authorization", &format!("Bearer {}", mc_access_token))
         .call()?
         .into_json()?;
 
-    let user_profile = UserProfile {
-        id: resp.id,
-        name: resp.name,
-        access_token: mc_access_token,
-    };
-
-    Ok(user_profile)
+    Ok(resp)
 }
 
-pub fn list() -> Result<Vec<String>, Box<dyn Error>> {
+pub fn list() -> Result<Vec<(Account, UserProfile)>, Box<dyn Error>> {
     let accounts = read()?.accounts;
-    let emails = accounts.keys().cloned().collect();
+    let mut list = Vec::new();
 
-    Ok(emails)
+    for account in accounts {
+        let profile = get_user_profile(&account)?;
+        list.push((account, profile));
+    }
+
+    Ok(list)
 }
