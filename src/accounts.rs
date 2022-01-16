@@ -67,6 +67,15 @@ fn add(account: Account) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn remove(account: &Account) -> Result<(), Box<dyn Error>> {
+    let mut config = read()?;
+    config.accounts = config.accounts.into_iter().filter(|a| a.access_token == account.access_token).collect();
+
+    write(&config)?;
+
+    Ok(())
+}
+
 // https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code
 pub fn authorize_device() -> Result<(String, String, Url), Box<dyn Error>> {
     #[derive(Deserialize)]
@@ -85,12 +94,17 @@ pub fn authorize_device() -> Result<(String, String, Url), Box<dyn Error>> {
 }
 
 fn refresh_token(account: &Account) -> Result<(), Box<dyn Error>> {
-    ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/token").send_form(&[
-        ("client_id", CLIENT_ID),
-        ("scope", SCOPE),
-        ("refresh_token", &account.refresh_token),
-        ("grant_type", "refresh_token"),
-    ])?;
+    let resp: Account = ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/token")
+        .send_form(&[
+            ("client_id", CLIENT_ID),
+            ("scope", SCOPE),
+            ("refresh_token", &account.refresh_token),
+            ("grant_type", "refresh_token"),
+        ])?
+        .into_json()?;
+
+    remove(account)?;
+    add(resp)?;
 
     Ok(())
 }
