@@ -1,6 +1,7 @@
 use crate::BASE_DIR;
-use isahc::{RequestExt, ReadResponseExt};
+use isahc::{ReadResponseExt, RequestExt};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::{
     error::Error,
     fs,
@@ -127,7 +128,7 @@ fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>
         token: String,
     }
 
-    let query = ureq::json!({
+    let query = json!({
         "Properties": {
             "AuthMethod": "RPS",
             "SiteName": "user.auth.xboxlive.com",
@@ -137,8 +138,12 @@ fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>
         "TokenType": "JWT"
     });
 
-    //let resp: Response = ureq::post(AUTH_URL).send_json(query)?.into_json()?;
-    let resp: Response = isahc::Request::post(AUTH_URL).header("Content-Type", "application/json").header("Accept", "application/json").body(query.to_string())?.send()?.json()?;
+    let resp: Response = isahc::Request::post(AUTH_URL)
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
+        .body(serde_json::to_vec(&query)?)?
+        .send()?
+        .json()?;
 
     Ok(resp.token)
 }
