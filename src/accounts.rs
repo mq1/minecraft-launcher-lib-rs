@@ -1,4 +1,5 @@
 use crate::BASE_DIR;
+use isahc::{RequestExt, ReadResponseExt};
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
@@ -9,7 +10,7 @@ use std::{
 };
 use url::Url;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Account {
     access_token: String,
     refresh_token: String,
@@ -69,7 +70,11 @@ fn add(account: Account) -> Result<(), Box<dyn Error>> {
 
 fn remove(account: &Account) -> Result<(), Box<dyn Error>> {
     let mut config = read()?;
-    config.accounts = config.accounts.into_iter().filter(|a| a.access_token == account.access_token).collect();
+    config.accounts = config
+        .accounts
+        .into_iter()
+        .filter(|a| a.access_token == account.access_token)
+        .collect();
 
     write(&config)?;
 
@@ -78,6 +83,8 @@ fn remove(account: &Account) -> Result<(), Box<dyn Error>> {
 
 // https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code
 pub fn authorize_device() -> Result<(String, String, Url), Box<dyn Error>> {
+    const AUTH_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode";
+
     #[derive(Deserialize)]
     struct Response {
         device_code: String,
@@ -85,50 +92,53 @@ pub fn authorize_device() -> Result<(String, String, Url), Box<dyn Error>> {
         verification_uri: Url,
     }
 
-    let resp: Response =
-        ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode")
-            .send_form(&[("client_id", CLIENT_ID), ("scope", SCOPE)])?
-            .into_json()?;
+    let query = &[("client_id", CLIENT_ID), ("scope", SCOPE)];
+
+    let resp: Response = ureq::post(AUTH_URL).send_form(query)?.into_json()?;
 
     Ok((resp.device_code, resp.user_code, resp.verification_uri))
 }
 
-fn refresh_token(account: &Account) -> Result<(), Box<dyn Error>> {
-    let resp: Account = ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/token")
-        .send_form(&[
-            ("client_id", CLIENT_ID),
-            ("scope", SCOPE),
-            ("refresh_token", &account.refresh_token),
-            ("grant_type", "refresh_token"),
-        ])?
-        .into_json()?;
+fn refresh_token(account: &Account) -> Result<Account, Box<dyn Error>> {
+    const TOKEN_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
+
+    let query = &[
+        ("client_id", CLIENT_ID),
+        ("scope", SCOPE),
+        ("refresh_token", &account.refresh_token),
+        ("grant_type", "refresh_token"),
+    ];
+
+    let resp: Account = ureq::post(TOKEN_URL).send_form(query)?.into_json()?;
 
     remove(account)?;
-    add(resp)?;
+    add(resp.clone())?;
 
-    Ok(())
+    Ok(resp)
 }
 
 /// returns xbl_token
 fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>> {
+    const AUTH_URL: &str = "https://user.auth.xboxlive.com/user/authenticate";
+
     #[derive(Deserialize)]
     #[serde(rename_all = "PascalCase")]
     struct Response {
         token: String,
     }
 
-    let resp: Response = ureq::post("https://user.auth.xboxlive.com/user/authenticate")
-        .set("Accept", "application/json")
-        .send_json(ureq::json!({
-            "Properties": {
-                "AuthMethod": "RPS",
-                "SiteName": "user.auth.xboxlive.com",
-                "RpsTicket": format!("d={}", ms_access_token)
-            },
-            "RelyingParty": "http://auth.xboxlive.com",
-            "TokenType": "JWT"
-        }))?
-        .into_json()?;
+    let query = ureq::json!({
+        "Properties": {
+            "AuthMethod": "RPS",
+            "SiteName": "user.auth.xboxlive.com",
+            "RpsTicket": format!("d={}", ms_access_token)
+        },
+        "RelyingParty": "http://auth.xboxlive.com",
+        "TokenType": "JWT"
+    });
+
+    //let resp: Response = ureq::post(AUTH_URL).send_json(query)?.into_json()?;
+    let resp: Response = isahc::Request::post(AUTH_URL).header("Content-Type", "application/json").header("Accept", "application/json").body(query.to_string())?.send()?.json()?;
 
     Ok(resp.token)
 }
@@ -252,6 +262,8 @@ pub struct UserProfile {
 
 /// returns user profile and access token
 fn get_user_profile(account: &Account) -> Result<UserProfile, Box<dyn Error>> {
+    let account = refresh_token(account)?;
+
     let mc_access_token = get_minecraft_access_token(&account.access_token)?;
 
     let resp: UserProfile = ureq::get("https://api.minecraftservices.com/minecraft/profile")
