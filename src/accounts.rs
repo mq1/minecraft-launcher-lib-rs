@@ -253,10 +253,10 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
         .finish();
 
     loop {
-        let auth = Request::post(TOKEN_URL)
+        let mut auth = Request::post(TOKEN_URL)
             .header("Content-Type", "application/x-www-form-urlencoded")
             .header("Accept", "application/json")
-            .body(query)?
+            .body(query.as_str())?
             .send()?;
 
         match auth.status() {
@@ -281,6 +281,7 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
                     }
                 }
             }
+            _ => todo!()
         }
     }
 
