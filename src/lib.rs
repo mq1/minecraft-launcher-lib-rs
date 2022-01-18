@@ -37,9 +37,9 @@ pub fn download_file(url: &Url, path: &Path) -> Result<(), Box<dyn Error>> {
     let dir = path.parent().ok_or("error getting parent dir")?;
     fs::create_dir_all(dir)?;
 
-    let mut resp = ureq::get(url.as_str()).call()?.into_reader();
+    let mut resp = isahc::get(url.as_str())?;
     let mut out = File::create(path)?;
-    io::copy(&mut resp, &mut out)?;
+    io::copy(resp.body_mut(), &mut out)?;
 
     println!("downloaded file {} to {:?}", url, path);
 
