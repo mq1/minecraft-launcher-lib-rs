@@ -1,5 +1,5 @@
 use crate::BASE_DIR;
-use isahc::{config::Configurable, http::StatusCode, ReadResponseExt, Request, RequestExt};
+use isahc::{http::StatusCode, ReadResponseExt, Request, RequestExt};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
@@ -281,7 +281,7 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
                     }
                 }
             }
-            _ => todo!()
+            _ => todo!(),
         }
     }
 
