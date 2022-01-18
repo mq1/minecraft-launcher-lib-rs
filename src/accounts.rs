@@ -210,18 +210,21 @@ fn authenticate_with_minecraft(
     xsts_token: &str,
     user_hash: &str,
 ) -> Result<String, Box<dyn Error>> {
+    const AUTH_URL: &str = "https://api.minecraftservices.com/authentication/login_with_xbox";
+
     #[derive(Deserialize)]
     struct Response {
         access_token: String,
     }
 
-    let resp: Response =
-        ureq::post("https://api.minecraftservices.com/authentication/login_with_xbox")
-            .set("Accept", "application/json")
-            .send_json(ureq::json!({
-                "identityToken": format!("XBL3.0 x={};{}", user_hash, xsts_token)
-            }))?
-            .into_json()?;
+    let query = json!({ "identityToken": format!("XBL3.0 x={};{}", user_hash, xsts_token) });
+
+    let resp: Response = Request::post(AUTH_URL)
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
+        .body(serde_json::to_vec(&query)?)?
+        .send()?
+        .json()?;
 
     Ok(resp.access_token)
 }
