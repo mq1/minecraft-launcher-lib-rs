@@ -111,14 +111,19 @@ pub fn authorize_device() -> Result<AuthorizeDeviceResponse, Box<dyn Error>> {
 fn refresh_token(account: &Account) -> Result<Account, Box<dyn Error>> {
     const TOKEN_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
 
-    let query = &[
-        ("client_id", CLIENT_ID),
-        ("scope", SCOPE),
-        ("refresh_token", &account.refresh_token),
-        ("grant_type", "refresh_token"),
-    ];
+    let query = form_urlencoded::Serializer::new(String::new())
+        .append_pair("client_id", CLIENT_ID)
+        .append_pair("scope", SCOPE)
+        .append_pair("refresh_token", &account.refresh_token)
+        .append_pair("grant_type", "refresh_token")
+        .finish();
 
-    let resp: Account = ureq::post(TOKEN_URL).send_form(query)?.into_json()?;
+    let resp: Account = Request::post(TOKEN_URL)
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .header("Accept", "application/json")
+        .body(query)?
+        .send()?
+        .json()?;
 
     remove(account)?;
     add(resp.clone())?;
