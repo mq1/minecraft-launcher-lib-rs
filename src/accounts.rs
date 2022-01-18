@@ -163,6 +163,8 @@ fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>
 
 /// returns xsts_token and user_hash
 fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String), Box<dyn Error>> {
+    const AUTH_URL: &str = "https://xsts.auth.xboxlive.com/xsts/authorize";
+
     #[derive(Deserialize)]
     struct Xui {
         uhs: String,
@@ -180,21 +182,27 @@ fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String), Box<dyn E
         display_claims: DisplayClaims,
     }
 
-    let mut resp: Response = ureq::post("https://xsts.auth.xboxlive.com/xsts/authorize")
-        .set("Accept", "application/json")
-        .send_json(ureq::json!({
-            "Properties": {
-                "SandboxId": "RETAIL",
-                "UserTokens": [
-                    xbl_token
-                ]
-            },
-            "RelyingParty": "rp://api.minecraftservices.com/",
-            "TokenType": "JWT"
-        }))?
-        .into_json()?;
+    let query = json!({
+        "Properties": {
+            "SandboxId": "RETAIL",
+            "UserTokens": [
+                xbl_token
+            ]
+        },
+        "RelyingParty": "rp://api.minecraftservices.com/",
+        "TokenType": "JWT"
+    });
 
-    Ok((resp.token, resp.display_claims.xui.remove(0).uhs))
+    let resp: Response = Request::post(AUTH_URL)
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
+        .body(serde_json::to_vec(&query)?)?
+        .send()?
+        .json()?;
+
+    let user_hash = resp.display_claims.xui[0].uhs.clone();
+
+    Ok((resp.token, user_hash))
 }
 
 /// returns mc_access_token
