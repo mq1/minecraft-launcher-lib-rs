@@ -74,7 +74,7 @@ fn remove(account: &Account) -> Result<(), Box<dyn Error>> {
     config.accounts = config
         .accounts
         .into_iter()
-        .filter(|a| a.access_token.eq(&account.access_token))
+        .filter(|a| !a.access_token.eq(&account.access_token))
         .collect();
 
     write(&config)?;
