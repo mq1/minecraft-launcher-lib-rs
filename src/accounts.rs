@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
     error::Error,
-    fs::{self, File},
+    fs,
     path::{Path, PathBuf},
     thread,
     time::Duration,
