@@ -20,7 +20,7 @@ pub struct Config {
 }
 
 lazy_static! {
-    pub static ref CONFIG_PATH: PathBuf = BASE_DIR.join("config").with_extension("toml");
+    pub static ref CONFIG_PATH: PathBuf = BASE_DIR.join("config").with_extension("json");
 }
 
 pub fn get_default_config() -> Config {
@@ -35,7 +35,7 @@ pub fn get_default_config() -> Config {
 }
 
 pub fn write(config: &Config) -> Result<(), Box<dyn Error>> {
-    let config = toml::to_string(config)?;
+    let config = serde_json::to_string_pretty(config)?;
     fs::write(CONFIG_PATH.as_path(), config)?;
 
     Ok(())
@@ -54,7 +54,7 @@ pub fn read() -> Result<Config, Box<dyn Error>> {
     }
 
     let data = fs::read_to_string(CONFIG_PATH.as_path())?;
-    let config = toml::from_str(&data)?;
+    let config = serde_json::from_str(&data)?;
 
     Ok(config)
 }

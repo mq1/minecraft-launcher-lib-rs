@@ -30,7 +30,7 @@ fn get_instance_path(name: &str) -> Result<PathBuf, Box<dyn Error>> {
 fn get_config_path(instance_name: &str) -> Result<PathBuf, Box<dyn Error>> {
     let path = get_instance_path(instance_name)?
         .join("config")
-        .with_extension("toml");
+        .with_extension("json");
 
     Ok(path)
 }
@@ -38,14 +38,14 @@ fn get_config_path(instance_name: &str) -> Result<PathBuf, Box<dyn Error>> {
 fn read_config(instance_name: &str) -> Result<Config, Box<dyn Error>> {
     let path = get_config_path(instance_name)?;
     let data = fs::read_to_string(path)?;
-    let config = toml::from_str(&data)?;
+    let config = serde_json::from_str(&data)?;
 
     Ok(config)
 }
 
 fn write_config(instance_name: &str, config: &Config) -> Result<(), Box<dyn Error>> {
     let path = get_config_path(instance_name)?;
-    let data = toml::to_string(config)?;
+    let data = serde_json::to_string_pretty(config)?;
     fs::write(path, data)?;
 
     Ok(())

@@ -52,7 +52,7 @@ fn read_asset_index(asset_index: &AssetIndex) -> Result<Vec<Object>, Box<dyn Err
     }
 
     let data = fs::read_to_string(&path)?;
-    let assets: Assets = toml::from_str(&data)?;
+    let assets: Assets = serde_json::from_str(&data)?;
     let objects = assets.objects.into_values().collect();
 
     Ok(objects)

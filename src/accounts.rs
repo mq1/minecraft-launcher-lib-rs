@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
     error::Error,
-    fs,
+    fs::{self, File},
     path::{Path, PathBuf},
     thread,
     time::Duration,
@@ -26,7 +26,7 @@ const CLIENT_ID: &str = "2000ea79-d993-4591-b9c4-e678f82ae1db";
 const SCOPE: &str = "XboxLive.signin offline_access";
 
 lazy_static! {
-    static ref ACCOUNTS_PATH: PathBuf = BASE_DIR.join("accounts").with_extension("toml");
+    static ref ACCOUNTS_PATH: PathBuf = BASE_DIR.join("accounts").with_extension("json");
 }
 
 fn get_new_config() -> Config {
@@ -36,7 +36,7 @@ fn get_new_config() -> Config {
 }
 
 fn write(config: &Config) -> Result<(), Box<dyn Error>> {
-    let config = toml::to_string(config)?;
+    let config = serde_json::to_string_pretty(config)?;
     fs::write(ACCOUNTS_PATH.as_path(), config)?;
 
     Ok(())
@@ -55,7 +55,7 @@ fn read() -> Result<Config, Box<dyn Error>> {
     }
 
     let data = fs::read_to_string(ACCOUNTS_PATH.as_path())?;
-    let config = toml::from_str(&data)?;
+    let config = serde_json::from_str(&data)?;
 
     Ok(config)
 }
