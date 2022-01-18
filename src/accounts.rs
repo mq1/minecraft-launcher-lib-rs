@@ -1,5 +1,5 @@
 use crate::BASE_DIR;
-use isahc::{ReadResponseExt, RequestExt};
+use isahc::{ReadResponseExt, Request, RequestExt};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
@@ -9,7 +9,7 @@ use std::{
     thread,
     time::Duration,
 };
-use url::Url;
+use url::{form_urlencoded, Url};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Account {
@@ -82,22 +82,30 @@ fn remove(account: &Account) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[derive(Deserialize)]
+pub struct AuthorizeDeviceResponse {
+    pub device_code: String,
+    pub user_code: String,
+    pub verification_uri: Url,
+}
+
 // https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code
-pub fn authorize_device() -> Result<(String, String, Url), Box<dyn Error>> {
+pub fn authorize_device() -> Result<AuthorizeDeviceResponse, Box<dyn Error>> {
     const AUTH_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode";
 
-    #[derive(Deserialize)]
-    struct Response {
-        device_code: String,
-        user_code: String,
-        verification_uri: Url,
-    }
+    let query = form_urlencoded::Serializer::new(String::new())
+        .append_pair("client_id", CLIENT_ID)
+        .append_pair("scope", SCOPE)
+        .finish();
 
-    let query = &[("client_id", CLIENT_ID), ("scope", SCOPE)];
+    let resp: AuthorizeDeviceResponse = Request::post(AUTH_URL)
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .header("Accept", "application/json")
+        .body(query)?
+        .send()?
+        .json()?;
 
-    let resp: Response = ureq::post(AUTH_URL).send_form(query)?.into_json()?;
-
-    Ok((resp.device_code, resp.user_code, resp.verification_uri))
+    Ok(resp)
 }
 
 fn refresh_token(account: &Account) -> Result<Account, Box<dyn Error>> {
@@ -138,7 +146,7 @@ fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>
         "TokenType": "JWT"
     });
 
-    let resp: Response = isahc::Request::post(AUTH_URL)
+    let resp: Response = Request::post(AUTH_URL)
         .header("Content-Type", "application/json")
         .header("Accept", "application/json")
         .body(serde_json::to_vec(&query)?)?
