@@ -1,5 +1,5 @@
 use crate::BASE_DIR;
-use isahc::{http::StatusCode, ReadResponseExt, Request, RequestExt};
+use isahc::{config::Configurable, http::StatusCode, ReadResponseExt, Request, RequestExt};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
@@ -295,14 +295,18 @@ pub struct UserProfile {
 
 /// returns user profile and access token
 fn get_user_profile(account: &Account) -> Result<UserProfile, Box<dyn Error>> {
+    const PROFILE_URL: &str = "https://api.minecraftservices.com/minecraft/profile";
+
     let account = refresh_token(account)?;
 
     let mc_access_token = get_minecraft_access_token(&account.access_token)?;
 
-    let resp: UserProfile = ureq::get("https://api.minecraftservices.com/minecraft/profile")
-        .set("Authorization", &format!("Bearer {}", mc_access_token))
-        .call()?
-        .into_json()?;
+    let resp: UserProfile = Request::get(PROFILE_URL)
+        .header("Authorization", &format!("Bearer {}", mc_access_token))
+        .header("Accept", "application/json")
+        .body(())?
+        .send()?
+        .json()?;
 
     Ok(resp)
 }
