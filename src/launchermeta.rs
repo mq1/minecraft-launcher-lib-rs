@@ -1,10 +1,11 @@
-use crate::{BASE_DIR, download_file};
+use crate::{download_file, BASE_DIR};
+use isahc::ReadResponseExt;
 use serde::{Deserialize, Serialize};
-use url::Url;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::path::PathBuf;
+use url::Url;
 
 #[derive(Serialize, Deserialize)]
 pub struct Version {
@@ -86,11 +87,9 @@ fn get_minecraft_manifest_path(minecraft_version: &str) -> PathBuf {
     minecraft_version_manifest_path
 }
 
-pub fn get_minecraft_versions() -> Result<Vec<Version>, ureq::Error> {
+pub fn get_minecraft_versions() -> Result<Vec<Version>, Box<dyn Error>> {
     let resp: VersionManifest =
-        ureq::get("https://launchermeta.mojang.com/mc/game/version_manifest.json")
-            .call()?
-            .into_json()?;
+        isahc::get("https://launchermeta.mojang.com/mc/game/version_manifest.json")?.json()?;
 
     Ok(resp.versions)
 }
