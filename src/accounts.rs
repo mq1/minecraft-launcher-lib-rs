@@ -1,5 +1,5 @@
 use crate::BASE_DIR;
-use isahc::{ReadResponseExt, Request, RequestExt};
+use isahc::{http::StatusCode, ReadResponseExt, Request, RequestExt};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
@@ -239,43 +239,47 @@ fn get_minecraft_access_token(ms_access_token: &str) -> Result<String, Box<dyn E
 
 // https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code
 pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
+    const TOKEN_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
+
     #[derive(Deserialize)]
     struct AuthenticationErrorResponse {
         error: String,
     }
 
-    loop {
-        let auth = ureq::post("https://login.microsoftonline.com/consumers/oauth2/v2.0/token")
-            .send_form(&[
-                ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
-                ("client_id", CLIENT_ID),
-                ("device_code", device_code),
-            ]);
+    let query = form_urlencoded::Serializer::new(String::new())
+        .append_pair("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
+        .append_pair("client_id", CLIENT_ID)
+        .append_pair("device_code", device_code)
+        .finish();
 
-        match auth {
-            Ok(response) => {
-                let account: Account = response.into_json()?;
+    loop {
+        let auth = Request::post(TOKEN_URL)
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .header("Accept", "application/json")
+            .body(query)?
+            .send()?;
+
+        match auth.status() {
+            StatusCode::OK => {
+                let account: Account = auth.json()?;
                 add(account)?;
 
                 break;
             }
-            Err(ureq::Error::Status(code, response)) => {
-                let resp: AuthenticationErrorResponse = response.into_json()?;
+            StatusCode::BAD_REQUEST => {
+                let resp: AuthenticationErrorResponse = auth.json()?;
+
                 match resp.error.as_str() {
                     "authorization_pending" => thread::sleep(Duration::from_secs(5)),
                     _ => {
                         println!("Authentication error");
-                        println!("{} {}", code, resp.error);
+                        println!("{}", resp.error);
                         // TODO handle other errors
                         // https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code#expected-errors
 
                         break;
                     }
                 }
-            }
-            Err(_) => {
-                println!("Network Error");
-                return Err(Box::new(auth.err().unwrap()));
             }
         }
     }
