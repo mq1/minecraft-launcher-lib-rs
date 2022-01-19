@@ -145,7 +145,7 @@ fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>
         "Properties": {
             "AuthMethod": "RPS",
             "SiteName": "user.auth.xboxlive.com",
-            "RpsTicket": format!("d={}", ms_access_token)
+            "RpsTicket": format!("d={ms_access_token}")
         },
         "RelyingParty": "http://auth.xboxlive.com",
         "TokenType": "JWT"
@@ -217,7 +217,7 @@ fn authenticate_with_minecraft(
         access_token: String,
     }
 
-    let query = json!({ "identityToken": format!("XBL3.0 x={};{}", user_hash, xsts_token) });
+    let query = json!({ "identityToken": format!("XBL3.0 x={user_hash};{xsts_token}") });
 
     let resp: Response = Request::post(AUTH_URL)
         .header("Content-Type", "application/json")
@@ -301,7 +301,7 @@ pub fn get_user_profile(account: &Account) -> Result<UserProfile, Box<dyn Error>
     let mc_access_token = get_minecraft_access_token(&account.access_token)?;
 
     let resp: UserProfile = Request::get(PROFILE_URL)
-        .header("Authorization", &format!("Bearer {}", mc_access_token))
+        .header("Authorization", &format!("Bearer {mc_access_token}"))
         .header("Accept", "application/json")
         .body(())?
         .send()?
