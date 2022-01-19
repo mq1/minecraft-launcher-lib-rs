@@ -130,8 +130,8 @@ pub fn run_instance(name: &str, account: &Account) -> Result<(), Box<dyn Error>>
     for arg in get_jvm_args(&minecraft_meta) {
         let final_arg = match arg.as_str() {
             "-Djava.library.path=${natives_directory}" => &format!("-Djava.library.path={}", natives_dir.as_path().to_str().unwrap()),
-            "-Dminecraft.launcher.brand=${launcher_name}" => env!("CARGO_PKG_NAME"),
-            "-Dminecraft.launcher.version=${launcher_version}" => env!("CARGO_PKG_VERSION"),
+            "-Dminecraft.launcher.brand=${launcher_name}" => &format!("-Dminecraft.launcher.brand={}", env!("CARGO_PKG_NAME")),
+            "-Dminecraft.launcher.version=${launcher_version}" => &format!("-Dminecraft.launcher.version={}", env!("CARGO_PKG_VERSION")),
             "${classpath}" => &get_classpath(&minecraft_meta),
             _ => &arg
         };
