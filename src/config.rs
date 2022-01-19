@@ -8,8 +8,8 @@ use std::{
 
 #[derive(Serialize, Deserialize)]
 pub struct JavaConfig {
-    path: String,
-    memory: String,
+    pub path: String,
+    pub memory: String,
 }
 
 #[derive(Serialize, Deserialize)]

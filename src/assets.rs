@@ -20,7 +20,7 @@ struct Object {
 }
 
 lazy_static! {
-    static ref ASSETS_DIR: PathBuf = BASE_DIR.join("assets");
+    pub static ref ASSETS_DIR: PathBuf = BASE_DIR.join("assets");
     static ref OBJECTS_DIR: PathBuf = ASSETS_DIR.join("objects");
     static ref INDEXES_DIR: PathBuf = ASSETS_DIR.join("indexes");
 }

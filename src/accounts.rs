@@ -13,7 +13,7 @@ use url::{form_urlencoded, Url};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Account {
-    access_token: String,
+    pub access_token: String,
     refresh_token: String,
 }
 
@@ -295,10 +295,8 @@ pub struct UserProfile {
 }
 
 /// returns user profile and access token
-fn get_user_profile(account: &Account) -> Result<UserProfile, Box<dyn Error>> {
+pub fn get_user_profile(account: &Account) -> Result<UserProfile, Box<dyn Error>> {
     const PROFILE_URL: &str = "https://api.minecraftservices.com/minecraft/profile";
-
-    let account = refresh_token(account)?;
 
     let mc_access_token = get_minecraft_access_token(&account.access_token)?;
 

@@ -7,6 +7,29 @@ use std::fs::File;
 use std::path::PathBuf;
 use url::Url;
 
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum ArgumentValue {
+    One(String),
+    Multiple(Vec<String>)
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum Argument {
+    Simple(String),
+    Explicit {
+        rules: Vec<Rule>,
+        value: ArgumentValue
+    }
+}
+
+#[derive(Deserialize)]
+struct Arguments {
+    pub game: Vec<Argument>,
+    pub jvm: Vec<Argument>
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Version {
     pub id: String,
@@ -69,6 +92,7 @@ pub struct Library {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MinecraftMeta {
+    pub arguments: Arguments,
     pub id: String,
     pub asset_index: AssetIndex,
     pub downloads: Downloads,
@@ -116,4 +140,56 @@ pub fn read_minecraft_manifest(minecraft_version: &str) -> Result<MinecraftMeta,
     let config = serde_json::from_reader(file)?;
 
     Ok(config)
+}
+
+// TODO refactor these two methods
+
+// TODO parse rules
+pub fn get_jvm_args(minecraft_meta: &MinecraftMeta) -> Vec<String> {
+    let mut final_args = Vec::new();
+
+    for arg in &minecraft_meta.arguments.jvm {
+        match arg {
+            Argument::Simple(argument) => {
+                final_args.push(argument.to_owned());
+            }
+            Argument::Explicit { rules, value } => {
+                match value {
+                    crate::launchermeta::ArgumentValue::One(argument) => {
+                        final_args.push(argument.to_owned());
+                    },
+                    crate::launchermeta::ArgumentValue::Multiple(arguments) => {
+                        final_args.append(&mut arguments.to_owned());
+                    },
+                }
+            },
+        }
+    }
+
+    final_args
+}
+
+// TODO parse rules
+pub fn get_game_args(minecraft_meta: &MinecraftMeta) -> Vec<String> {
+    let mut final_args = Vec::new();
+
+    for arg in &minecraft_meta.arguments.game {
+        match arg {
+            Argument::Simple(argument) => {
+                final_args.push(argument.to_owned());
+            }
+            Argument::Explicit { rules, value } => {
+                match value {
+                    crate::launchermeta::ArgumentValue::One(argument) => {
+                        final_args.push(argument.to_owned());
+                    },
+                    crate::launchermeta::ArgumentValue::Multiple(arguments) => {
+                        final_args.append(&mut arguments.to_owned());
+                    },
+                }
+            },
+        }
+    }
+
+    final_args
 }

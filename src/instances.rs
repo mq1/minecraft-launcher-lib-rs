@@ -1,20 +1,28 @@
+use crate::accounts::get_user_profile;
+use crate::accounts::Account;
 use crate::assets::download_assets;
+use crate::assets::ASSETS_DIR;
 use crate::config;
 use crate::launchermeta::download_minecraft_manifest;
+use crate::launchermeta::get_game_args;
+use crate::launchermeta::get_jvm_args;
 use crate::launchermeta::read_minecraft_manifest;
 use crate::libraries::download_libraries;
-use crate::BASE_DIR;
 use crate::libraries::extract_natives;
+use crate::BASE_DIR;
 use serde::{Deserialize, Serialize};
-use url::Url;
 use std::error::Error;
 use std::fs;
 use std::fs::{create_dir_all, read_dir};
 use std::path::PathBuf;
+use std::process::Command;
+use url::Url;
 
 #[derive(Serialize, Deserialize)]
 struct Config {
     minecraft_version: String,
+    version_type: String,
+    main_class: String,
 }
 
 lazy_static! {
@@ -72,6 +80,8 @@ pub fn new_instance(
 
     let config = Config {
         minecraft_version: minecraft_version.to_owned(),
+        version_type: String::from("Vanilla"),
+        main_class: String::from("net.minecraft.launchwrapper.Launch"),
     };
     write_config(name, &config)?;
 
@@ -97,7 +107,7 @@ pub fn rename_instance(old_name: &str, new_name: &str) -> Result<(), Box<dyn Err
     Ok(())
 }
 
-pub fn run_instance(name: &str) -> Result<(), Box<dyn Error>> {
+pub fn run_instance(name: &str, account: &Account) -> Result<(), Box<dyn Error>> {
     // update last runned instance
     let global_config = config::read()?;
     let global_config = config::Config {
@@ -112,6 +122,49 @@ pub fn run_instance(name: &str) -> Result<(), Box<dyn Error>> {
     download_assets(&minecraft_meta.asset_index)?;
     let (artifacts, native_artifacts) = download_libraries(&minecraft_meta)?;
     let natives_dir = extract_natives(&native_artifacts)?;
+
+    let user_profile = get_user_profile(account)?;
+
+    // parse jvm args
+    let mut jvm_args: Vec<&str> = Vec::new();
+    for arg in get_jvm_args(&minecraft_meta) {
+        let final_arg = match arg.as_str() {
+            "-Djava.library.path=${natives_directory}" => &format!("-Djava.library.path={}", natives_dir.as_path().to_str().unwrap()),
+            "-Dminecraft.launcher.brand=${launcher_name}" => env!("CARGO_PKG_NAME"),
+            "-Dminecraft.launcher.version=${launcher_version}" => env!("CARGO_PKG_VERSION"),
+            "${classpath}" => &get_classpath(&minecraft_meta),
+            _ => &arg
+        };
+        jvm_args.push(final_arg);
+    }
+
+    // parse game args
+    let mut game_args: Vec<&str> = Vec::new();
+    for arg in get_game_args(&minecraft_meta) {
+        let final_arg = match arg.as_str() {
+            "${auth_player_name}" => &user_profile.name,
+            "${version_name}" => &config.minecraft_version,
+            "${game_directory}" => ".",
+            "${assets_root}" => ASSETS_DIR.as_path().to_str().unwrap(),
+            "${assets_index_name}" => &minecraft_meta.asset_index.id,
+            "${auth_uuid}" => &user_profile.id,
+            "${auth_access_token}" => &account.access_token,
+            "${clientid}" => &format!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")),
+            "${user_type}" => "mojang",
+            "${version_type}" => &config.version_type,
+            _ => &arg
+        };
+        game_args.push(final_arg);
+    }
+
+    let mut final_args = Vec::new();
+    final_args.append(&mut jvm_args);
+    final_args.push(&config.main_class);
+    final_args.append(&mut game_args);
+
+    Command::new(global_config.java.path)
+        .args(final_args)
+        .spawn()?;
 
     Ok(())
 }
