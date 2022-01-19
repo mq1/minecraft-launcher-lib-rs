@@ -164,6 +164,7 @@ pub fn run_instance(name: &str, account: &Account) -> Result<(), Box<dyn Error>>
 
     Command::new(global_config.java.path)
         .args(final_args)
+        .current_dir(get_instance_path(name)?)
         .spawn()?;
 
     Ok(())
