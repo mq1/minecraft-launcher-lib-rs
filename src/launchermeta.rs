@@ -1,8 +1,7 @@
 use crate::{download_file, BASE_DIR};
-use isahc::ReadResponseExt;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::error::Error;
 use std::fs::File;
 use std::path::PathBuf;
 use url::Url;
@@ -11,7 +10,7 @@ use url::Url;
 #[serde(untagged)]
 enum ArgumentValue {
     One(String),
-    Multiple(Vec<String>)
+    Multiple(Vec<String>),
 }
 
 #[derive(Deserialize)]
@@ -20,14 +19,14 @@ enum Argument {
     Simple(String),
     Explicit {
         rules: Vec<Rule>,
-        value: ArgumentValue
-    }
+        value: ArgumentValue,
+    },
 }
 
 #[derive(Deserialize)]
 struct Arguments {
     pub game: Vec<Argument>,
-    pub jvm: Vec<Argument>
+    pub jvm: Vec<Argument>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -111,30 +110,34 @@ fn get_minecraft_manifest_path(minecraft_version: &str) -> PathBuf {
     minecraft_version_manifest_path
 }
 
-pub fn get_minecraft_versions() -> Result<Vec<Version>, Box<dyn Error>> {
+pub async fn get_minecraft_versions() -> Result<Vec<Version>> {
     let resp: VersionManifest =
-        isahc::get("https://launchermeta.mojang.com/mc/game/version_manifest.json")?.json()?;
+        surf::get("https://launchermeta.mojang.com/mc/game/version_manifest.json")
+            .recv_json()
+            .await
+            .map_err(|e| anyhow!(e))?;
 
     Ok(resp.versions)
 }
 
-pub fn download_minecraft_manifest(
+pub async fn download_minecraft_manifest(
     minecraft_version: &str,
     minecraft_version_manifest_url: &Url,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     let minecraft_version_manifest_path = get_minecraft_manifest_path(minecraft_version);
 
     if !minecraft_version_manifest_path.is_file() {
         download_file(
             minecraft_version_manifest_url,
             &minecraft_version_manifest_path,
-        )?;
+        )
+        .await?;
     }
 
     Ok(())
 }
 
-pub fn read_minecraft_manifest(minecraft_version: &str) -> Result<MinecraftMeta, Box<dyn Error>> {
+pub fn read_minecraft_manifest(minecraft_version: &str) -> Result<MinecraftMeta> {
     let minecraft_version_manifest_path = get_minecraft_manifest_path(minecraft_version);
     let file = File::open(minecraft_version_manifest_path)?;
     let config = serde_json::from_reader(file)?;
@@ -153,14 +156,12 @@ pub fn get_jvm_args(minecraft_meta: &MinecraftMeta) -> Vec<String> {
             Argument::Simple(argument) => {
                 final_args.push(argument.to_owned());
             }
-            Argument::Explicit { rules, value } => {
-                match value {
-                    crate::launchermeta::ArgumentValue::One(argument) => {
-                        final_args.push(argument.to_owned());
-                    },
-                    crate::launchermeta::ArgumentValue::Multiple(arguments) => {
-                        final_args.append(&mut arguments.to_owned());
-                    },
+            Argument::Explicit { rules, value } => match value {
+                crate::launchermeta::ArgumentValue::One(argument) => {
+                    final_args.push(argument.to_owned());
+                }
+                crate::launchermeta::ArgumentValue::Multiple(arguments) => {
+                    final_args.append(&mut arguments.to_owned());
                 }
             },
         }
@@ -178,14 +179,12 @@ pub fn get_game_args(minecraft_meta: &MinecraftMeta) -> Vec<String> {
             Argument::Simple(argument) => {
                 final_args.push(argument.to_owned());
             }
-            Argument::Explicit { rules, value } => {
-                match value {
-                    crate::launchermeta::ArgumentValue::One(argument) => {
-                        final_args.push(argument.to_owned());
-                    },
-                    crate::launchermeta::ArgumentValue::Multiple(arguments) => {
-                        final_args.append(&mut arguments.to_owned());
-                    },
+            Argument::Explicit { rules, value } => match value {
+                crate::launchermeta::ArgumentValue::One(argument) => {
+                    final_args.push(argument.to_owned());
+                }
+                crate::launchermeta::ArgumentValue::Multiple(arguments) => {
+                    final_args.append(&mut arguments.to_owned());
                 }
             },
         }

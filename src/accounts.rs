@@ -1,15 +1,15 @@
 use crate::BASE_DIR;
-use isahc::{http::StatusCode, ReadResponseExt, Request, RequestExt};
-use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::{
-    error::Error,
     fs,
     path::{Path, PathBuf},
     thread,
     time::Duration,
 };
-use url::{form_urlencoded, Url};
+
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use url::Url;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Account {
@@ -35,21 +35,21 @@ fn get_new_config() -> Config {
     }
 }
 
-fn write(config: &Config) -> Result<(), Box<dyn Error>> {
+fn write(config: &Config) -> Result<()> {
     let config = serde_json::to_string_pretty(config)?;
     fs::write(ACCOUNTS_PATH.as_path(), config)?;
 
     Ok(())
 }
 
-fn new() -> Result<Config, Box<dyn Error>> {
+fn new() -> Result<Config> {
     let config = get_new_config();
     write(&config)?;
 
     Ok(config)
 }
 
-fn read() -> Result<Config, Box<dyn Error>> {
+fn read() -> Result<Config> {
     if !Path::is_file(ACCOUNTS_PATH.as_path()) {
         return new();
     }
@@ -60,7 +60,7 @@ fn read() -> Result<Config, Box<dyn Error>> {
     Ok(config)
 }
 
-fn add(account: Account) -> Result<(), Box<dyn Error>> {
+fn add(account: Account) -> Result<()> {
     let mut config = read()?;
     config.accounts.push(account);
 
@@ -69,7 +69,7 @@ fn add(account: Account) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn remove(account: &Account) -> Result<(), Box<dyn Error>> {
+fn remove(account: &Account) -> Result<()> {
     let mut config = read()?;
     config.accounts = config
         .accounts
@@ -90,40 +90,40 @@ pub struct AuthorizeDeviceResponse {
 }
 
 // https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code
-pub fn authorize_device() -> Result<AuthorizeDeviceResponse, Box<dyn Error>> {
+pub async fn authorize_device() -> Result<AuthorizeDeviceResponse> {
     const AUTH_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode";
 
-    let query = form_urlencoded::Serializer::new(String::new())
-        .append_pair("client_id", CLIENT_ID)
-        .append_pair("scope", SCOPE)
-        .finish();
+    let query = hashmap! {
+        "client_id" => CLIENT_ID,
+        "scope" => SCOPE
+    };
 
-    let resp: AuthorizeDeviceResponse = Request::post(AUTH_URL)
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .header("Accept", "application/json")
-        .body(query)?
-        .send()?
-        .json()?;
+    let body = surf::Body::from_form(&query).map_err(|e| anyhow!(e))?;
+    let resp: AuthorizeDeviceResponse = surf::post(AUTH_URL)
+        .body(body)
+        .recv_json()
+        .await
+        .map_err(|e| anyhow!(e))?;
 
     Ok(resp)
 }
 
-fn refresh_token(account: &Account) -> Result<Account, Box<dyn Error>> {
+async fn refresh_token(account: &Account) -> Result<Account> {
     const TOKEN_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
 
-    let query = form_urlencoded::Serializer::new(String::new())
-        .append_pair("client_id", CLIENT_ID)
-        .append_pair("scope", SCOPE)
-        .append_pair("refresh_token", &account.refresh_token)
-        .append_pair("grant_type", "refresh_token")
-        .finish();
+    let query = hashmap! {
+        "client_id" => CLIENT_ID,
+        "scope" => SCOPE,
+        "refresh_token" => &account.refresh_token,
+        "grant_type" => "refresh_token",
+    };
 
-    let resp: Account = Request::post(TOKEN_URL)
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .header("Accept", "application/json")
-        .body(query)?
-        .send()?
-        .json()?;
+    let body = surf::Body::from_form(&query).map_err(|e| anyhow!(e))?;
+    let resp: Account = surf::post(TOKEN_URL)
+        .body(body)
+        .recv_json()
+        .await
+        .map_err(|e| anyhow!(e))?;
 
     remove(account)?;
     add(resp.clone())?;
@@ -132,7 +132,7 @@ fn refresh_token(account: &Account) -> Result<Account, Box<dyn Error>> {
 }
 
 /// returns xbl_token
-fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>> {
+async fn authenticate_with_xbl(ms_access_token: &str) -> Result<String> {
     const AUTH_URL: &str = "https://user.auth.xboxlive.com/user/authenticate";
 
     #[derive(Deserialize)]
@@ -151,18 +151,18 @@ fn authenticate_with_xbl(ms_access_token: &str) -> Result<String, Box<dyn Error>
         "TokenType": "JWT"
     });
 
-    let resp: Response = Request::post(AUTH_URL)
-        .header("Content-Type", "application/json")
-        .header("Accept", "application/json")
-        .body(serde_json::to_vec(&query)?)?
-        .send()?
-        .json()?;
+    let resp: Response = surf::post(AUTH_URL)
+        .body_json(&query)
+        .map_err(|e| anyhow!(e))?
+        .recv_json()
+        .await
+        .map_err(|e| anyhow!(e))?;
 
     Ok(resp.token)
 }
 
 /// returns xsts_token and user_hash
-fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String), Box<dyn Error>> {
+async fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String)> {
     const AUTH_URL: &str = "https://xsts.auth.xboxlive.com/xsts/authorize";
 
     #[derive(Deserialize)]
@@ -193,12 +193,12 @@ fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String), Box<dyn E
         "TokenType": "JWT"
     });
 
-    let resp: Response = Request::post(AUTH_URL)
-        .header("Content-Type", "application/json")
-        .header("Accept", "application/json")
-        .body(serde_json::to_vec(&query)?)?
-        .send()?
-        .json()?;
+    let resp: Response = surf::post(AUTH_URL)
+        .body_json(&query)
+        .map_err(|e| anyhow!(e))?
+        .recv_json()
+        .await
+        .map_err(|e| anyhow!(e))?;
 
     let user_hash = resp.display_claims.xui[0].uhs.clone();
 
@@ -206,10 +206,7 @@ fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String), Box<dyn E
 }
 
 /// returns mc_access_token
-fn authenticate_with_minecraft(
-    xsts_token: &str,
-    user_hash: &str,
-) -> Result<String, Box<dyn Error>> {
+async fn authenticate_with_minecraft(xsts_token: &str, user_hash: &str) -> Result<String> {
     const AUTH_URL: &str = "https://api.minecraftservices.com/authentication/login_with_xbox";
 
     #[derive(Deserialize)]
@@ -219,26 +216,26 @@ fn authenticate_with_minecraft(
 
     let query = json!({ "identityToken": format!("XBL3.0 x={user_hash};{xsts_token}") });
 
-    let resp: Response = Request::post(AUTH_URL)
-        .header("Content-Type", "application/json")
-        .header("Accept", "application/json")
-        .body(serde_json::to_vec(&query)?)?
-        .send()?
-        .json()?;
+    let resp: Response = surf::post(AUTH_URL)
+        .body_json(&query)
+        .map_err(|e| anyhow!(e))?
+        .recv_json()
+        .await
+        .map_err(|e| anyhow!(e))?;
 
     Ok(resp.access_token)
 }
 
-fn get_minecraft_access_token(ms_access_token: &str) -> Result<String, Box<dyn Error>> {
-    let xbl_token = authenticate_with_xbl(ms_access_token)?;
-    let (xsts_token, user_hash) = authenticate_with_xsts(&xbl_token)?;
-    let mc_access_token = authenticate_with_minecraft(&xsts_token, &user_hash)?;
+async fn get_minecraft_access_token(ms_access_token: &str) -> Result<String> {
+    let xbl_token = authenticate_with_xbl(ms_access_token).await?;
+    let (xsts_token, user_hash) = authenticate_with_xsts(&xbl_token).await?;
+    let mc_access_token = authenticate_with_minecraft(&xsts_token, &user_hash).await?;
 
     Ok(mc_access_token)
 }
 
 // https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code
-pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
+pub async fn authenticate(device_code: &str) -> Result<()> {
     const TOKEN_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
 
     #[derive(Deserialize)]
@@ -246,29 +243,32 @@ pub fn authenticate(device_code: &str) -> Result<(), Box<dyn Error>> {
         error: String,
     }
 
-    let query = form_urlencoded::Serializer::new(String::new())
-        .append_pair("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
-        .append_pair("client_id", CLIENT_ID)
-        .append_pair("device_code", device_code)
-        .finish();
+    #[derive(Deserialize)]
+    enum AuthenticationResponse {
+        Account(Account),
+        AuthenticationErrorResponse(AuthenticationErrorResponse),
+    }
+
+    let query = hashmap! {
+        "grant_type" => "urn:ietf:params:oauth:grant-type:device_code",
+        "client_id" => CLIENT_ID,
+        "device_code" => device_code
+    };
 
     loop {
-        let mut auth = Request::post(TOKEN_URL)
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .header("Accept", "application/json")
-            .body(query.as_str())?
-            .send()?;
+        let body = surf::Body::from_form(&query).map_err(|e| anyhow!(e))?;
+        let resp: AuthenticationResponse = surf::post(TOKEN_URL)
+            .body(body)
+            .recv_json()
+            .await
+            .map_err(|e| anyhow!(e))?;
 
-        match auth.status() {
-            StatusCode::OK => {
-                let account: Account = auth.json()?;
+        match resp {
+            AuthenticationResponse::Account(account) => {
                 add(account)?;
-
                 break;
             }
-            StatusCode::BAD_REQUEST => {
-                let resp: AuthenticationErrorResponse = auth.json()?;
-
+            AuthenticationResponse::AuthenticationErrorResponse(resp) => {
                 match resp.error.as_str() {
                     "authorization_pending" => thread::sleep(Duration::from_secs(5)),
                     _ => {
@@ -295,27 +295,26 @@ pub struct UserProfile {
 }
 
 /// returns user profile and access token
-pub fn get_user_profile(account: &Account) -> Result<UserProfile, Box<dyn Error>> {
+pub async fn get_user_profile(account: &Account) -> Result<UserProfile> {
     const PROFILE_URL: &str = "https://api.minecraftservices.com/minecraft/profile";
 
-    let mc_access_token = get_minecraft_access_token(&account.access_token)?;
+    let mc_access_token = get_minecraft_access_token(&account.access_token).await?;
 
-    let resp: UserProfile = Request::get(PROFILE_URL)
+    let resp: UserProfile = surf::get(PROFILE_URL)
         .header("Authorization", &format!("Bearer {mc_access_token}"))
-        .header("Accept", "application/json")
-        .body(())?
-        .send()?
-        .json()?;
+        .recv_json()
+        .await
+        .map_err(|e| anyhow!(e))?;
 
     Ok(resp)
 }
 
-pub fn list() -> Result<Vec<(Account, UserProfile)>, Box<dyn Error>> {
+pub async fn list() -> Result<Vec<(Account, UserProfile)>> {
     let accounts = read()?.accounts;
     let mut list = Vec::new();
 
     for account in accounts {
-        let profile = get_user_profile(&account)?;
+        let profile = get_user_profile(&account).await?;
         list.push((account, profile));
     }
 

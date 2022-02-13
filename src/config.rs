@@ -1,10 +1,11 @@
 use crate::BASE_DIR;
-use serde::{Deserialize, Serialize};
 use std::{
-    error::Error,
     fs,
     path::{Path, PathBuf},
 };
+
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct JavaConfig {
@@ -34,21 +35,21 @@ pub fn get_default_config() -> Config {
     }
 }
 
-pub fn write(config: &Config) -> Result<(), Box<dyn Error>> {
+pub fn write(config: &Config) -> Result<()> {
     let config = serde_json::to_string_pretty(config)?;
     fs::write(CONFIG_PATH.as_path(), config)?;
 
     Ok(())
 }
 
-pub fn new() -> Result<Config, Box<dyn Error>> {
+pub fn new() -> Result<Config> {
     let config = get_default_config();
     write(&config)?;
 
     Ok(config)
 }
 
-pub fn read() -> Result<Config, Box<dyn Error>> {
+pub fn read() -> Result<Config> {
     if !Path::is_file(CONFIG_PATH.as_path()) {
         return new();
     }

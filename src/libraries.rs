@@ -3,7 +3,9 @@ use crate::{
     launchermeta::{Artifact, Library, MinecraftMeta},
     BASE_DIR,
 };
-use std::{error::Error, fs, io, path::PathBuf};
+use std::{fs, io, path::PathBuf};
+
+use anyhow::Result;
 
 lazy_static! {
     static ref LIBRARIES_DIR: PathBuf = BASE_DIR.join("libraries");
@@ -13,20 +15,20 @@ lazy_static! {
     static ref OS: String = std::env::consts::OS.replace("macos", "osx");
 }
 
-fn download_client_jar(minecraft_meta: &MinecraftMeta) -> Result<(), Box<dyn Error>> {
+async fn download_client_jar(minecraft_meta: &MinecraftMeta) -> Result<()> {
     let path = MINECRAFT_CLIENTS_DIR
         .join(&minecraft_meta.id)
         .join(format!("minecraft-{}-client", &minecraft_meta.id))
         .with_extension("jar");
 
-    download_file(&minecraft_meta.downloads.client.url, &path)?;
+    download_file(&minecraft_meta.downloads.client.url, &path).await?;
 
     Ok(())
 }
 
-fn download_artifact(artifact: &Artifact) -> Result<(), Box<dyn Error>> {
+async fn download_artifact(artifact: &Artifact) -> Result<()> {
     let path = LIBRARIES_DIR.join(&artifact.path);
-    download_file(&artifact.url, &path)?;
+    download_file(&artifact.url, &path).await?;
 
     Ok(())
 }
@@ -77,7 +79,7 @@ fn get_native_artifacts(libs: &Vec<&Library>) -> Vec<Artifact> {
         .collect()
 }
 
-pub fn extract_natives(native_artifacts: &Vec<Artifact>) -> Result<PathBuf, Box<dyn Error>> {
+pub fn extract_natives(native_artifacts: &Vec<Artifact>) -> Result<PathBuf> {
     fs::remove_dir_all(NATIVES_TMP_DIR.as_path())?;
     fs::create_dir_all(NATIVES_TMP_DIR.as_path())?;
 
@@ -112,21 +114,21 @@ pub fn extract_natives(native_artifacts: &Vec<Artifact>) -> Result<PathBuf, Box<
     Ok(NATIVES_TMP_DIR.as_path().into())
 }
 
-pub fn download_libraries(
+pub async fn download_libraries(
     minecraft_meta: &MinecraftMeta,
-) -> Result<(Vec<Artifact>, Vec<Artifact>), Box<dyn Error>> {
-    download_client_jar(minecraft_meta)?;
+) -> Result<(Vec<Artifact>, Vec<Artifact>)> {
+    download_client_jar(minecraft_meta).await?;
 
     let libs = get_valid_libs(minecraft_meta);
     let artifacts = get_artifacts(&libs);
     let native_artifacts = get_native_artifacts(&libs);
 
     for artifact in &artifacts {
-        download_artifact(artifact)?;
+        download_artifact(artifact).await?;
     }
 
     for artifact in &native_artifacts {
-        download_artifact(artifact)?;
+        download_artifact(artifact).await?;
     }
 
     Ok((artifacts, native_artifacts))

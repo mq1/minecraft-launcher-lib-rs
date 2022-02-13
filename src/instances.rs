@@ -10,8 +10,8 @@ use crate::launchermeta::read_minecraft_manifest;
 use crate::libraries::download_libraries;
 use crate::libraries::extract_natives;
 use crate::BASE_DIR;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use std::fs;
 use std::fs::{create_dir_all, read_dir};
 use std::path::PathBuf;
@@ -29,13 +29,13 @@ lazy_static! {
     static ref INSTANCES_DIR: PathBuf = BASE_DIR.join("instances");
 }
 
-fn get_instance_path(name: &str) -> Result<PathBuf, Box<dyn Error>> {
+fn get_instance_path(name: &str) -> Result<PathBuf> {
     let path = INSTANCES_DIR.join(name);
 
     Ok(path)
 }
 
-fn get_config_path(instance_name: &str) -> Result<PathBuf, Box<dyn Error>> {
+fn get_config_path(instance_name: &str) -> Result<PathBuf> {
     let path = get_instance_path(instance_name)?
         .join("config")
         .with_extension("json");
@@ -43,7 +43,7 @@ fn get_config_path(instance_name: &str) -> Result<PathBuf, Box<dyn Error>> {
     Ok(path)
 }
 
-fn read_config(instance_name: &str) -> Result<Config, Box<dyn Error>> {
+fn read_config(instance_name: &str) -> Result<Config> {
     let path = get_config_path(instance_name)?;
     let data = fs::read_to_string(path)?;
     let config = serde_json::from_str(&data)?;
@@ -51,7 +51,7 @@ fn read_config(instance_name: &str) -> Result<Config, Box<dyn Error>> {
     Ok(config)
 }
 
-fn write_config(instance_name: &str, config: &Config) -> Result<(), Box<dyn Error>> {
+fn write_config(instance_name: &str, config: &Config) -> Result<()> {
     let path = get_config_path(instance_name)?;
     let data = serde_json::to_string_pretty(config)?;
     fs::write(path, data)?;
@@ -59,7 +59,7 @@ fn write_config(instance_name: &str, config: &Config) -> Result<(), Box<dyn Erro
     Ok(())
 }
 
-pub fn get_instance_list() -> Result<Vec<String>, Box<dyn Error>> {
+pub fn get_instance_list() -> Result<Vec<String>> {
     let instance_list = read_dir(INSTANCES_DIR.as_path())?
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.file_name())
@@ -70,11 +70,11 @@ pub fn get_instance_list() -> Result<Vec<String>, Box<dyn Error>> {
     Ok(instance_list)
 }
 
-pub fn new_instance(
+pub async fn new_instance(
     name: &str,
     minecraft_version: &str,
     minecraft_version_manifest_url: &Url,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     let instance_dir = get_instance_path(name)?;
     create_dir_all(&instance_dir)?;
 
@@ -85,12 +85,12 @@ pub fn new_instance(
     };
     write_config(name, &config)?;
 
-    download_minecraft_manifest(minecraft_version, minecraft_version_manifest_url)?;
+    download_minecraft_manifest(minecraft_version, minecraft_version_manifest_url).await?;
 
     Ok(())
 }
 
-pub fn remove_instance(name: &str) -> Result<(), Box<dyn Error>> {
+pub fn remove_instance(name: &str) -> Result<()> {
     let instance_dir = get_instance_path(name)?;
 
     fs::remove_dir_all(instance_dir)?;
@@ -98,7 +98,7 @@ pub fn remove_instance(name: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn rename_instance(old_name: &str, new_name: &str) -> Result<(), Box<dyn Error>> {
+pub fn rename_instance(old_name: &str, new_name: &str) -> Result<()> {
     let old_instance_dir = get_instance_path(old_name)?;
     let new_instance_dir = old_instance_dir.parent().unwrap().join(new_name);
 
@@ -107,7 +107,7 @@ pub fn rename_instance(old_name: &str, new_name: &str) -> Result<(), Box<dyn Err
     Ok(())
 }
 
-pub fn run_instance(name: &str, account: &Account) -> Result<(), Box<dyn Error>> {
+pub async fn run_instance(name: &str, account: &Account) -> Result<()> {
     // update last runned instance
     let global_config = config::read()?;
     let global_config = config::Config {
@@ -119,21 +119,28 @@ pub fn run_instance(name: &str, account: &Account) -> Result<(), Box<dyn Error>>
     let config = read_config(name)?;
     let minecraft_meta = read_minecraft_manifest(&config.minecraft_version)?;
 
-    download_assets(&minecraft_meta.asset_index)?;
-    let (artifacts, native_artifacts) = download_libraries(&minecraft_meta)?;
+    download_assets(&minecraft_meta.asset_index).await?;
+    let (artifacts, native_artifacts) = download_libraries(&minecraft_meta).await?;
     let natives_dir = extract_natives(&native_artifacts)?;
 
-    let user_profile = get_user_profile(account)?;
+    let user_profile = get_user_profile(account).await?;
 
     // parse jvm args
     let mut jvm_args: Vec<&str> = Vec::new();
     for arg in get_jvm_args(&minecraft_meta) {
         let final_arg = match arg.as_str() {
-            "-Djava.library.path=${natives_directory}" => &format!("-Djava.library.path={}", natives_dir.as_path().to_str().unwrap()),
-            "-Dminecraft.launcher.brand=${launcher_name}" => &format!("-Dminecraft.launcher.brand={}", env!("CARGO_PKG_NAME")),
-            "-Dminecraft.launcher.version=${launcher_version}" => &format!("-Dminecraft.launcher.version={}", env!("CARGO_PKG_VERSION")),
+            "-Djava.library.path=${natives_directory}" => &format!(
+                "-Djava.library.path={}",
+                natives_dir.as_path().to_str().unwrap()
+            ),
+            "-Dminecraft.launcher.brand=${launcher_name}" => {
+                &format!("-Dminecraft.launcher.brand={}", env!("CARGO_PKG_NAME"))
+            }
+            "-Dminecraft.launcher.version=${launcher_version}" => {
+                &format!("-Dminecraft.launcher.version={}", env!("CARGO_PKG_VERSION"))
+            }
             "${classpath}" => &get_classpath(&minecraft_meta),
-            _ => &arg
+            _ => &arg,
         };
         jvm_args.push(final_arg);
     }
@@ -152,7 +159,7 @@ pub fn run_instance(name: &str, account: &Account) -> Result<(), Box<dyn Error>>
             "${clientid}" => &format!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")),
             "${user_type}" => "mojang",
             "${version_type}" => &config.version_type,
-            _ => &arg
+            _ => &arg,
         };
         game_args.push(final_arg);
     }

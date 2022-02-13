@@ -1,12 +1,13 @@
 use crate::launchermeta::AssetIndex;
 use crate::{download_file, BASE_DIR};
-use serde::Deserialize;
-use std::collections::HashMap;
-use std::error::Error;
 use std::{
     fs,
     path::{Path, PathBuf},
 };
+
+use anyhow::Result;
+use serde::Deserialize;
+use std::collections::HashMap;
 use url::Url;
 
 #[derive(Deserialize)]
@@ -25,7 +26,7 @@ lazy_static! {
     static ref INDEXES_DIR: PathBuf = ASSETS_DIR.join("indexes");
 }
 
-fn download_asset(hash: &str) -> Result<(), Box<dyn Error>> {
+async fn download_asset(hash: &str) -> Result<()> {
     let first2 = &hash[..2];
 
     let path = OBJECTS_DIR.join(&first2).join(&hash);
@@ -33,22 +34,22 @@ fn download_asset(hash: &str) -> Result<(), Box<dyn Error>> {
         .join(first2)?
         .join(hash)?;
 
-    download_file(&url, &path)?;
+    download_file(&url, &path).await?;
 
     Ok(())
 }
 
-fn get_asset_index_path(id: &str) -> Result<PathBuf, Box<dyn Error>> {
+fn get_asset_index_path(id: &str) -> Result<PathBuf> {
     let index_path = INDEXES_DIR.join(id).with_extension("json");
 
     Ok(index_path)
 }
 
-fn read_asset_index(asset_index: &AssetIndex) -> Result<Vec<Object>, Box<dyn Error>> {
+async fn read_asset_index(asset_index: &AssetIndex) -> Result<Vec<Object>> {
     let path = get_asset_index_path(&asset_index.id)?;
 
     if !Path::is_file(&path) {
-        download_file(&asset_index.url, &path)?;
+        download_file(&asset_index.url, &path).await?;
     }
 
     let data = fs::read_to_string(&path)?;
@@ -58,11 +59,11 @@ fn read_asset_index(asset_index: &AssetIndex) -> Result<Vec<Object>, Box<dyn Err
     Ok(objects)
 }
 
-pub fn download_assets(asset_index: &AssetIndex) -> Result<(), Box<dyn Error>> {
-    let objects = read_asset_index(asset_index)?;
+pub async fn download_assets(asset_index: &AssetIndex) -> Result<()> {
+    let objects = read_asset_index(asset_index).await?;
 
     for object in objects.iter() {
-        download_asset(&object.hash)?;
+        download_asset(&object.hash).await?;
     }
 
     Ok(())

@@ -1,8 +1,10 @@
-use directories::ProjectDirs;
 use std::{
-    error::Error,
-    path::{Path, PathBuf}, fs::{self, File}, io,
+    fs,
+    path::{Path, PathBuf},
 };
+
+use anyhow::Result;
+use directories::ProjectDirs;
 use url::Url;
 
 pub mod accounts;
@@ -14,6 +16,12 @@ pub mod libraries;
 
 #[macro_use]
 extern crate lazy_static;
+
+#[macro_use]
+extern crate maplit;
+
+#[macro_use]
+extern crate anyhow;
 
 lazy_static! {
     pub static ref BASE_DIR: PathBuf = {
@@ -28,18 +36,21 @@ lazy_static! {
     };
 }
 
-pub fn download_file(url: &Url, path: &Path) -> Result<(), Box<dyn Error>> {
+pub async fn download_file(url: &Url, path: &Path) -> Result<()> {
     if path.exists() {
         println!("{:?} already present", path);
         return Ok(());
     }
 
-    let dir = path.parent().ok_or("error getting parent dir")?;
+    let dir = path.parent().ok_or(anyhow!("error getting parent dir"))?;
     fs::create_dir_all(dir)?;
 
-    let mut resp = isahc::get(url.as_str())?;
-    let mut out = File::create(path)?;
-    io::copy(resp.body_mut(), &mut out)?;
+    let contents = surf::get(url.as_str())
+        .recv_bytes()
+        .await
+        .map_err(|e| anyhow!(e))?;
+
+    fs::write(path, contents)?;
 
     println!("downloaded file {} to {:?}", url, path);
 
