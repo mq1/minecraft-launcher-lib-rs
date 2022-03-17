@@ -85,7 +85,7 @@ pub struct Account {
     refresh_token: String,
 }
 
-pub async fn get_account(code: &str) -> Result<Account> {
+pub async fn get_account() -> Result<Account> {
     let code = listen_login_callback()?;
 
     #[derive(Deserialize)]
