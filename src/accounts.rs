@@ -1,21 +1,12 @@
-use crate::BASE_DIR;
+use crate::{BASE_DIR, msa::Account};
 use std::{
     fs,
     path::{Path, PathBuf},
-    thread,
-    time::Duration,
 };
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use url::Url;
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct Account {
-    pub access_token: String,
-    refresh_token: String,
-}
 
 #[derive(Serialize, Deserialize)]
 struct Config {
@@ -80,55 +71,6 @@ fn remove(account: &Account) -> Result<()> {
     write(&config)?;
 
     Ok(())
-}
-
-#[derive(Deserialize)]
-pub struct AuthorizeDeviceResponse {
-    pub device_code: String,
-    pub user_code: String,
-    pub verification_uri: Url,
-}
-
-// https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code
-pub async fn authorize_device() -> Result<AuthorizeDeviceResponse> {
-    const AUTH_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode";
-
-    let query = hashmap! {
-        "client_id" => CLIENT_ID,
-        "scope" => SCOPE
-    };
-
-    let body = surf::Body::from_form(&query).map_err(|e| anyhow!(e))?;
-    let resp: AuthorizeDeviceResponse = surf::post(AUTH_URL)
-        .body(body)
-        .recv_json()
-        .await
-        .map_err(|e| anyhow!(e))?;
-
-    Ok(resp)
-}
-
-async fn refresh_token(account: &Account) -> Result<Account> {
-    const TOKEN_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
-
-    let query = hashmap! {
-        "client_id" => CLIENT_ID,
-        "scope" => SCOPE,
-        "refresh_token" => &account.refresh_token,
-        "grant_type" => "refresh_token",
-    };
-
-    let body = surf::Body::from_form(&query).map_err(|e| anyhow!(e))?;
-    let resp: Account = surf::post(TOKEN_URL)
-        .body(body)
-        .recv_json()
-        .await
-        .map_err(|e| anyhow!(e))?;
-
-    remove(account)?;
-    add(resp.clone())?;
-
-    Ok(resp)
 }
 
 /// returns xbl_token
@@ -232,60 +174,6 @@ async fn get_minecraft_access_token(ms_access_token: &str) -> Result<String> {
     let mc_access_token = authenticate_with_minecraft(&xsts_token, &user_hash).await?;
 
     Ok(mc_access_token)
-}
-
-// https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code
-pub async fn authenticate(device_code: &str) -> Result<()> {
-    const TOKEN_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
-
-    #[derive(Deserialize)]
-    struct AuthenticationErrorResponse {
-        error: String,
-    }
-
-    #[derive(Deserialize)]
-    enum AuthenticationResponse {
-        Account(Account),
-        AuthenticationErrorResponse(AuthenticationErrorResponse),
-    }
-
-    let query = hashmap! {
-        "grant_type" => "urn:ietf:params:oauth:grant-type:device_code",
-        "client_id" => CLIENT_ID,
-        "device_code" => device_code
-    };
-
-    loop {
-        let body = surf::Body::from_form(&query).map_err(|e| anyhow!(e))?;
-        let resp: AuthenticationResponse = surf::post(TOKEN_URL)
-            .body(body)
-            .recv_json()
-            .await
-            .map_err(|e| anyhow!(e))?;
-
-        match resp {
-            AuthenticationResponse::Account(account) => {
-                add(account)?;
-                break;
-            }
-            AuthenticationResponse::AuthenticationErrorResponse(resp) => {
-                match resp.error.as_str() {
-                    "authorization_pending" => thread::sleep(Duration::from_secs(5)),
-                    _ => {
-                        println!("Authentication error");
-                        println!("{}", resp.error);
-                        // TODO handle other errors
-                        // https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code#expected-errors
-
-                        break;
-                    }
-                }
-            }
-            _ => todo!(),
-        }
-    }
-
-    Ok(())
 }
 
 #[derive(Deserialize)]
