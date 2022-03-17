@@ -12,9 +12,6 @@ struct Config {
     accounts: Vec<Account>,
 }
 
-const CLIENT_ID: &str = "2000ea79-d993-4591-b9c4-e678f82ae1db";
-const SCOPE: &str = "XboxLive.signin offline_access";
-
 lazy_static! {
     static ref ACCOUNTS_PATH: PathBuf = BASE_DIR.join("accounts").with_extension("json");
 }
