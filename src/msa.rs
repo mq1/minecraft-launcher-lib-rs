@@ -80,7 +80,7 @@ fn listen_login_callback() -> Result<String> {
 #[derive(Serialize, Deserialize)]
 pub struct Account {
     pub access_token: String,
-    token_type: String,
+    pub token_type: String,
     expires: DateTime<Local>,
     refresh_token: String,
 }

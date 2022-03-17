@@ -14,6 +14,7 @@ pub mod instances;
 pub mod launchermeta;
 pub mod libraries;
 pub mod msa;
+pub mod profile;
 
 #[macro_use]
 extern crate lazy_static;
