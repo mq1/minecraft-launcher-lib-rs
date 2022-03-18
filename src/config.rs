@@ -1,6 +1,7 @@
 use crate::BASE_DIR;
 use std::{
-    fs,
+    fs::File,
+    io::{BufReader, BufWriter},
     path::{Path, PathBuf},
 };
 
@@ -36,8 +37,10 @@ pub fn get_default_config() -> Config {
 }
 
 pub fn write(config: &Config) -> Result<()> {
-    let config = serde_json::to_string_pretty(config)?;
-    fs::write(CONFIG_PATH.as_path(), config)?;
+    let file = File::create(CONFIG_PATH.as_path())?;
+    let writer = BufWriter::new(file);
+
+    serde_json::to_writer_pretty(writer, config)?;
 
     Ok(())
 }
@@ -54,8 +57,10 @@ pub fn read() -> Result<Config> {
         return new();
     }
 
-    let data = fs::read_to_string(CONFIG_PATH.as_path())?;
-    let config = serde_json::from_str(&data)?;
+    let file = File::open(CONFIG_PATH.as_path())?;
+    let reader = BufReader::new(file);
+
+    let config = serde_json::from_reader(reader)?;
 
     Ok(config)
 }
