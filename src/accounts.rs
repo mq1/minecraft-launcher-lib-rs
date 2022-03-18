@@ -1,5 +1,6 @@
-use crate::{msa::Account, BASE_DIR};
+use crate::{msa::MsaAccount, profile::get_user_profile, BASE_DIR};
 use std::{
+    collections::HashMap,
     fs,
     path::{Path, PathBuf},
 };
@@ -9,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 struct Config {
-    accounts: Vec<Account>,
+    accounts: HashMap<String, MsaAccount>,
 }
 
 lazy_static! {
@@ -18,7 +19,7 @@ lazy_static! {
 
 fn get_new_config() -> Config {
     Config {
-        accounts: Vec::new(),
+        accounts: HashMap::new(),
     }
 }
 
@@ -47,22 +48,19 @@ fn read() -> Result<Config> {
     Ok(config)
 }
 
-fn add(account: Account) -> Result<()> {
+fn add(account: MsaAccount) -> Result<()> {
     let mut config = read()?;
-    config.accounts.push(account);
+    let profile = get_user_profile(&account)?;
+    config.accounts.insert(profile.id, account);
 
     write(&config)?;
 
     Ok(())
 }
 
-fn remove(account: &Account) -> Result<()> {
+fn remove(id: &str) -> Result<()> {
     let mut config = read()?;
-    config.accounts = config
-        .accounts
-        .into_iter()
-        .filter(|a| !a.access_token.eq(&account.access_token))
-        .collect();
+    config.accounts.remove(id);
 
     write(&config)?;
 

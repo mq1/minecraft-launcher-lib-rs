@@ -78,7 +78,7 @@ fn listen_login_callback() -> Result<String> {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Account {
+pub struct MsaAccount {
     pub access_token: String,
     pub token_type: String,
     expires: DateTime<Local>,

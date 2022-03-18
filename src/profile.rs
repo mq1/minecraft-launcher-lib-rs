@@ -1,4 +1,4 @@
-use crate::msa::Account;
+use crate::msa::MsaAccount;
 use anyhow::Result;
 use serde::Deserialize;
 use serde_json::json;
@@ -23,9 +23,7 @@ fn authenticate_with_xbl(ms_access_token: &str) -> Result<String> {
         "TokenType": "JWT"
     });
 
-    let resp: Response = ureq::post(AUTH_URL)
-        .send_json(query)?
-        .into_json()?;
+    let resp: Response = ureq::post(AUTH_URL).send_json(query)?.into_json()?;
 
     Ok(resp.token)
 }
@@ -62,9 +60,7 @@ fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String)> {
         "TokenType": "JWT"
     });
 
-    let resp: Response = ureq::post(AUTH_URL)
-        .send_json(query)?
-        .into_json()?;
+    let resp: Response = ureq::post(AUTH_URL).send_json(query)?.into_json()?;
 
     let user_hash = resp.display_claims.xui[0].uhs.clone();
 
@@ -82,9 +78,7 @@ fn authenticate_with_minecraft(xsts_token: &str, user_hash: &str) -> Result<Stri
 
     let query = json!({ "identityToken": format!("XBL3.0 x={user_hash};{xsts_token}") });
 
-    let resp: Response = ureq::post(AUTH_URL)
-        .send_json(query)?
-        .into_json()?;
+    let resp: Response = ureq::post(AUTH_URL).send_json(query)?.into_json()?;
 
     Ok(resp.access_token)
 }
@@ -104,10 +98,10 @@ pub struct UserProfile {
 }
 
 /// returns user profile and access token
-pub fn get_user_profile(account: &Account) -> Result<UserProfile> {
+pub fn get_user_profile(account: &MsaAccount) -> Result<UserProfile> {
     const PROFILE_URL: &str = "https://api.minecraftservices.com/minecraft/profile";
 
-	let token_type = &account.token_type;
+    let token_type = &account.token_type;
     let mc_access_token = get_minecraft_access_token(&account.access_token)?;
 
     let resp: UserProfile = ureq::get(PROFILE_URL)
