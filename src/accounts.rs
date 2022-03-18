@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 struct Config {
+    format_version: String,
     accounts: HashMap<String, MsaAccount>,
 }
 
@@ -19,6 +20,7 @@ lazy_static! {
 
 fn get_new_config() -> Config {
     Config {
+        format_version: "0".to_string(),
         accounts: HashMap::new(),
     }
 }
