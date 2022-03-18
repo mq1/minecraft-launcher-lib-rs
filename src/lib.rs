@@ -1,5 +1,6 @@
 use std::{
-    fs,
+    fs::{self, File},
+    io::{self, BufWriter},
     path::{Path, PathBuf},
 };
 
@@ -18,9 +19,6 @@ pub mod profile;
 
 #[macro_use]
 extern crate lazy_static;
-
-#[macro_use]
-extern crate maplit;
 
 #[macro_use]
 extern crate anyhow;
@@ -47,12 +45,10 @@ pub async fn download_file(url: &Url, path: &Path) -> Result<()> {
     let dir = path.parent().ok_or(anyhow!("error getting parent dir"))?;
     fs::create_dir_all(dir)?;
 
-    let contents = surf::get(url.as_str())
-        .recv_bytes()
-        .await
-        .map_err(|e| anyhow!(e))?;
-
-    fs::write(path, contents)?;
+    let mut resp = ureq::get(url.as_str()).call()?.into_reader();
+    let file = File::create(path)?;
+    let mut writer = BufWriter::new(file);
+    io::copy(&mut resp, &mut writer)?;
 
     println!("downloaded file {} to {:?}", url, path);
 

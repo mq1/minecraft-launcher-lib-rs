@@ -4,7 +4,7 @@ use serde::Deserialize;
 use serde_json::json;
 
 /// returns xbl_token
-async fn authenticate_with_xbl(ms_access_token: &str) -> Result<String> {
+fn authenticate_with_xbl(ms_access_token: &str) -> Result<String> {
     const AUTH_URL: &str = "https://user.auth.xboxlive.com/user/authenticate";
 
     #[derive(Deserialize)]
@@ -23,18 +23,15 @@ async fn authenticate_with_xbl(ms_access_token: &str) -> Result<String> {
         "TokenType": "JWT"
     });
 
-    let resp: Response = surf::post(AUTH_URL)
-        .body_json(&query)
-        .map_err(|e| anyhow!(e))?
-        .recv_json()
-        .await
-        .map_err(|e| anyhow!(e))?;
+    let resp: Response = ureq::post(AUTH_URL)
+        .send_json(query)?
+        .into_json()?;
 
     Ok(resp.token)
 }
 
 /// returns xsts_token and user_hash
-async fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String)> {
+fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String)> {
     const AUTH_URL: &str = "https://xsts.auth.xboxlive.com/xsts/authorize";
 
     #[derive(Deserialize)]
@@ -65,12 +62,9 @@ async fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String)> {
         "TokenType": "JWT"
     });
 
-    let resp: Response = surf::post(AUTH_URL)
-        .body_json(&query)
-        .map_err(|e| anyhow!(e))?
-        .recv_json()
-        .await
-        .map_err(|e| anyhow!(e))?;
+    let resp: Response = ureq::post(AUTH_URL)
+        .send_json(query)?
+        .into_json()?;
 
     let user_hash = resp.display_claims.xui[0].uhs.clone();
 
@@ -78,7 +72,7 @@ async fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String)> {
 }
 
 /// returns mc_access_token
-async fn authenticate_with_minecraft(xsts_token: &str, user_hash: &str) -> Result<String> {
+fn authenticate_with_minecraft(xsts_token: &str, user_hash: &str) -> Result<String> {
     const AUTH_URL: &str = "https://api.minecraftservices.com/authentication/login_with_xbox";
 
     #[derive(Deserialize)]
@@ -88,20 +82,17 @@ async fn authenticate_with_minecraft(xsts_token: &str, user_hash: &str) -> Resul
 
     let query = json!({ "identityToken": format!("XBL3.0 x={user_hash};{xsts_token}") });
 
-    let resp: Response = surf::post(AUTH_URL)
-        .body_json(&query)
-        .map_err(|e| anyhow!(e))?
-        .recv_json()
-        .await
-        .map_err(|e| anyhow!(e))?;
+    let resp: Response = ureq::post(AUTH_URL)
+        .send_json(query)?
+        .into_json()?;
 
     Ok(resp.access_token)
 }
 
-async fn get_minecraft_access_token(ms_access_token: &str) -> Result<String> {
-    let xbl_token = authenticate_with_xbl(ms_access_token).await?;
-    let (xsts_token, user_hash) = authenticate_with_xsts(&xbl_token).await?;
-    let mc_access_token = authenticate_with_minecraft(&xsts_token, &user_hash).await?;
+fn get_minecraft_access_token(ms_access_token: &str) -> Result<String> {
+    let xbl_token = authenticate_with_xbl(ms_access_token)?;
+    let (xsts_token, user_hash) = authenticate_with_xsts(&xbl_token)?;
+    let mc_access_token = authenticate_with_minecraft(&xsts_token, &user_hash)?;
 
     Ok(mc_access_token)
 }
@@ -113,17 +104,16 @@ pub struct UserProfile {
 }
 
 /// returns user profile and access token
-pub async fn get_user_profile(account: &Account) -> Result<UserProfile> {
+pub fn get_user_profile(account: &Account) -> Result<UserProfile> {
     const PROFILE_URL: &str = "https://api.minecraftservices.com/minecraft/profile";
 
 	let token_type = &account.token_type;
-    let mc_access_token = get_minecraft_access_token(&account.access_token).await?;
+    let mc_access_token = get_minecraft_access_token(&account.access_token)?;
 
-    let resp: UserProfile = surf::get(PROFILE_URL)
-        .header("Authorization", &format!("{token_type} {mc_access_token}"))
-        .recv_json()
-        .await
-        .map_err(|e| anyhow!(e))?;
+    let resp: UserProfile = ureq::get(PROFILE_URL)
+        .set("Authorization", &format!("{token_type} {mc_access_token}"))
+        .call()?
+        .into_json()?;
 
     Ok(resp)
 }

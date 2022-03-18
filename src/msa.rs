@@ -85,7 +85,7 @@ pub struct Account {
     refresh_token: String,
 }
 
-pub async fn get_account() -> Result<Account> {
+pub fn get_account() -> Result<Account> {
     let code = listen_login_callback()?;
 
     #[derive(Deserialize)]
@@ -99,21 +99,18 @@ pub async fn get_account() -> Result<Account> {
 
     const url: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
 
-    let query = hashmap! {
-        "client_id" => CLIENT_ID,
-        "scope" => SCOPE,
-        "code" => &code,
-        "redirect_uri" => REDIRECT_URI,
-        "grant_type" => "authorization_code",
-        "code_verifier" => CODE_VERIFIER.as_ref()
-    };
+    let form = [
+        ("client_id", CLIENT_ID),
+        ("scope", SCOPE),
+        ("code", &code),
+        ("redirect_uri", REDIRECT_URI),
+        ("grant_type", "authorization_code"),
+        ("code_verifier", CODE_VERIFIER.as_ref())
+    ];
 
-    let body = surf::Body::from_form(&query).map_err(|e| anyhow!(e))?;
-    let resp: Response = surf::post(url)
-        .body(body)
-        .recv_json()
-        .await
-        .map_err(|e| anyhow!(e))?;
+    let resp: Response = ureq::post(url)
+        .send_form(&form)?
+        .into_json()?;
 
     let now = Local::now();
 
