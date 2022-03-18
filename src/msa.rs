@@ -109,12 +109,10 @@ pub fn get_account() -> Result<MsaAccount> {
 
     let resp: Response = ureq::post(url).send_form(&form)?.into_json()?;
 
-    let now = Local::now();
-
     let token = MsaAccount {
         access_token: resp.access_token,
         token_type: resp.token_type,
-        expires: now + Duration::seconds(resp.expires_in),
+        expires: Local::now() + Duration::seconds(resp.expires_in),
         refresh_token: resp.refresh_token,
     };
 
