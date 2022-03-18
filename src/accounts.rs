@@ -1,7 +1,8 @@
 use crate::{msa::MsaAccount, profile::get_user_profile, BASE_DIR};
 use std::{
     collections::HashMap,
-    fs,
+    fs::File,
+    io::{BufReader, BufWriter},
     path::{Path, PathBuf},
 };
 
@@ -26,8 +27,10 @@ fn get_new_config() -> Config {
 }
 
 fn write(config: &Config) -> Result<()> {
-    let config = serde_json::to_string_pretty(config)?;
-    fs::write(ACCOUNTS_PATH.as_path(), config)?;
+    let file = File::create(ACCOUNTS_PATH.as_path())?;
+    let writer = BufWriter::new(file);
+
+    serde_json::to_writer_pretty(writer, config)?;
 
     Ok(())
 }
@@ -44,8 +47,10 @@ fn read() -> Result<Config> {
         return new();
     }
 
-    let data = fs::read_to_string(ACCOUNTS_PATH.as_path())?;
-    let config = serde_json::from_str(&data)?;
+    let file = File::open(ACCOUNTS_PATH.as_path())?;
+    let reader = BufReader::new(file);
+
+    let config = serde_json::from_reader(reader)?;
 
     Ok(config)
 }
