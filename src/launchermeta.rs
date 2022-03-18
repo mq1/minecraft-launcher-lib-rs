@@ -6,6 +6,8 @@ use std::fs::File;
 use std::path::PathBuf;
 use url::Url;
 
+const VERSION_MANIFEST_URL: &str = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum ArgumentValue {
@@ -110,28 +112,24 @@ fn get_minecraft_manifest_path(minecraft_version: &str) -> PathBuf {
     minecraft_version_manifest_path
 }
 
-pub async fn get_minecraft_versions() -> Result<Vec<Version>> {
-    let resp: VersionManifest =
-        surf::get("https://launchermeta.mojang.com/mc/game/version_manifest.json")
-            .recv_json()
-            .await
-            .map_err(|e| anyhow!(e))?;
+pub fn get_minecraft_versions() -> Result<Vec<Version>> {
+    let resp: VersionManifest = ureq::get(VERSION_MANIFEST_URL).call()?.into_json()?;
 
     Ok(resp.versions)
 }
 
-pub async fn download_minecraft_manifest(
+pub fn download_minecraft_manifest(
     minecraft_version: &str,
     minecraft_version_manifest_url: &Url,
 ) -> Result<()> {
     let minecraft_version_manifest_path = get_minecraft_manifest_path(minecraft_version);
 
+    // check if it was already downloaded
     if !minecraft_version_manifest_path.is_file() {
         download_file(
             minecraft_version_manifest_url,
             &minecraft_version_manifest_path,
-        )
-        .await?;
+        )?;
     }
 
     Ok(())

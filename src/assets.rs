@@ -26,7 +26,7 @@ lazy_static! {
     static ref INDEXES_DIR: PathBuf = ASSETS_DIR.join("indexes");
 }
 
-async fn download_asset(hash: &str) -> Result<()> {
+fn download_asset(hash: &str) -> Result<()> {
     let first2 = &hash[..2];
 
     let path = OBJECTS_DIR.join(&first2).join(&hash);
@@ -34,7 +34,7 @@ async fn download_asset(hash: &str) -> Result<()> {
         .join(first2)?
         .join(hash)?;
 
-    download_file(&url, &path).await?;
+    download_file(&url, &path)?;
 
     Ok(())
 }
@@ -45,11 +45,11 @@ fn get_asset_index_path(id: &str) -> Result<PathBuf> {
     Ok(index_path)
 }
 
-async fn read_asset_index(asset_index: &AssetIndex) -> Result<Vec<Object>> {
+fn read_asset_index(asset_index: &AssetIndex) -> Result<Vec<Object>> {
     let path = get_asset_index_path(&asset_index.id)?;
 
     if !Path::is_file(&path) {
-        download_file(&asset_index.url, &path).await?;
+        download_file(&asset_index.url, &path)?;
     }
 
     let data = fs::read_to_string(&path)?;
@@ -59,11 +59,11 @@ async fn read_asset_index(asset_index: &AssetIndex) -> Result<Vec<Object>> {
     Ok(objects)
 }
 
-pub async fn download_assets(asset_index: &AssetIndex) -> Result<()> {
-    let objects = read_asset_index(asset_index).await?;
+pub fn download_assets(asset_index: &AssetIndex) -> Result<()> {
+    let objects = read_asset_index(asset_index)?;
 
     for object in objects.iter() {
-        download_asset(&object.hash).await?;
+        download_asset(&object.hash)?;
     }
 
     Ok(())

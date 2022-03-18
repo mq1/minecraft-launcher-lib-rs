@@ -15,20 +15,20 @@ lazy_static! {
     static ref OS: String = std::env::consts::OS.replace("macos", "osx");
 }
 
-async fn download_client_jar(minecraft_meta: &MinecraftMeta) -> Result<()> {
+fn download_client_jar(minecraft_meta: &MinecraftMeta) -> Result<()> {
     let path = MINECRAFT_CLIENTS_DIR
         .join(&minecraft_meta.id)
         .join(format!("minecraft-{}-client", &minecraft_meta.id))
         .with_extension("jar");
 
-    download_file(&minecraft_meta.downloads.client.url, &path).await?;
+    download_file(&minecraft_meta.downloads.client.url, &path)?;
 
     Ok(())
 }
 
-async fn download_artifact(artifact: &Artifact) -> Result<()> {
+fn download_artifact(artifact: &Artifact) -> Result<()> {
     let path = LIBRARIES_DIR.join(&artifact.path);
-    download_file(&artifact.url, &path).await?;
+    download_file(&artifact.url, &path)?;
 
     Ok(())
 }
@@ -114,21 +114,21 @@ pub fn extract_natives(native_artifacts: &Vec<Artifact>) -> Result<PathBuf> {
     Ok(NATIVES_TMP_DIR.as_path().into())
 }
 
-pub async fn download_libraries(
+pub fn download_libraries(
     minecraft_meta: &MinecraftMeta,
 ) -> Result<(Vec<Artifact>, Vec<Artifact>)> {
-    download_client_jar(minecraft_meta).await?;
+    download_client_jar(minecraft_meta)?;
 
     let libs = get_valid_libs(minecraft_meta);
     let artifacts = get_artifacts(&libs);
     let native_artifacts = get_native_artifacts(&libs);
 
     for artifact in &artifacts {
-        download_artifact(artifact).await?;
+        download_artifact(artifact)?;
     }
 
     for artifact in &native_artifacts {
-        download_artifact(artifact).await?;
+        download_artifact(artifact)?;
     }
 
     Ok((artifacts, native_artifacts))

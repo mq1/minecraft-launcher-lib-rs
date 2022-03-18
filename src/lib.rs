@@ -36,7 +36,7 @@ lazy_static! {
     };
 }
 
-pub async fn download_file(url: &Url, path: &Path) -> Result<()> {
+pub fn download_file(url: &Url, path: &Path) -> Result<()> {
     if path.exists() {
         println!("{:?} already present", path);
         return Ok(());
