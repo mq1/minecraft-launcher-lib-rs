@@ -85,7 +85,7 @@ pub struct MsaAccount {
     refresh_token: String,
 }
 
-pub fn get_account() -> Result<Account> {
+pub fn get_account() -> Result<MsaAccount> {
     let code = listen_login_callback()?;
 
     #[derive(Deserialize)]
@@ -114,7 +114,7 @@ pub fn get_account() -> Result<Account> {
 
     let now = Local::now();
 
-    let token = Account {
+    let token = MsaAccount {
         access_token: resp.access_token,
         token_type: resp.token_type,
         expires: now.add(Duration::seconds(resp.expires_in)),
