@@ -105,12 +105,10 @@ pub fn get_account() -> Result<MsaAccount> {
         ("code", &code),
         ("redirect_uri", REDIRECT_URI),
         ("grant_type", "authorization_code"),
-        ("code_verifier", CODE_VERIFIER.as_ref())
+        ("code_verifier", CODE_VERIFIER.as_ref()),
     ];
 
-    let resp: Response = ureq::post(url)
-        .send_form(&form)?
-        .into_json()?;
+    let resp: Response = ureq::post(url).send_form(&form)?.into_json()?;
 
     let now = Local::now();
 
