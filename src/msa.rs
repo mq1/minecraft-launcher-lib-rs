@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::ops::Add;
 
 use anyhow::Result;
 use chrono::{prelude::*, Duration};
@@ -115,7 +114,7 @@ pub fn get_account() -> Result<MsaAccount> {
     let token = MsaAccount {
         access_token: resp.access_token,
         token_type: resp.token_type,
-        expires: now.add(Duration::seconds(resp.expires_in)),
+        expires: now + Duration::seconds(resp.expires_in),
         refresh_token: resp.refresh_token,
     };
 
