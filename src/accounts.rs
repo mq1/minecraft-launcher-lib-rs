@@ -1,4 +1,3 @@
-use crate::{msa::MsaAccount, profile::get_user_profile, BASE_DIR};
 use std::{
     collections::HashMap,
     fs::File,
@@ -8,6 +7,8 @@ use std::{
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+
+use crate::{msa::MsaAccount, profile, BASE_DIR};
 
 #[derive(Serialize, Deserialize)]
 struct Config {
@@ -57,7 +58,7 @@ fn read() -> Result<Config> {
 
 fn add(account: MsaAccount) -> Result<()> {
     let mut config = read()?;
-    let (profile, _) = get_user_profile(&account)?;
+    let (profile, _) = profile::get_user_profile(&account)?;
     config.accounts.insert(profile.id, account);
 
     write(&config)?;

@@ -1,4 +1,3 @@
-use crate::BASE_DIR;
 use std::{
     fs::File,
     io::{BufReader, BufWriter},
@@ -7,6 +6,8 @@ use std::{
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+
+use crate::BASE_DIR;
 
 #[derive(Serialize, Deserialize)]
 pub struct JavaConfig {
