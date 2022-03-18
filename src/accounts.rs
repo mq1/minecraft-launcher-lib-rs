@@ -52,7 +52,7 @@ fn read() -> Result<Config> {
 
 fn add(account: MsaAccount) -> Result<()> {
     let mut config = read()?;
-    let profile = get_user_profile(&account)?;
+    let (profile, _) = get_user_profile(&account)?;
     config.accounts.insert(profile.id, account);
 
     write(&config)?;

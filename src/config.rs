@@ -17,7 +17,7 @@ pub struct JavaConfig {
 pub struct Config {
     pub locale: String,
     pub java: JavaConfig,
-    pub last_runned_instance: String,
+    pub last_launched_instance: String,
 }
 
 lazy_static! {
@@ -31,7 +31,7 @@ pub fn get_default_config() -> Config {
             path: "java".to_string(),
             memory: "2G".to_string(),
         },
-        last_runned_instance: String::new(),
+        last_launched_instance: String::new(),
     }
 }
 

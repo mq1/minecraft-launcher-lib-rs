@@ -1,5 +1,6 @@
 use crate::msa::MsaAccount;
 use anyhow::Result;
+use chrono::{DateTime, Duration, Local};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -67,28 +68,42 @@ fn authenticate_with_xsts(xbl_token: &str) -> Result<(String, String)> {
     Ok((resp.token, user_hash))
 }
 
+struct MinecraftAccount {
+    access_token: String,
+    token_type: String,
+    expires: DateTime<Local>,
+}
+
 /// returns mc_access_token
-fn authenticate_with_minecraft(xsts_token: &str, user_hash: &str) -> Result<String> {
+fn authenticate_with_minecraft(xsts_token: &str, user_hash: &str) -> Result<MinecraftAccount> {
     const AUTH_URL: &str = "https://api.minecraftservices.com/authentication/login_with_xbox";
 
     #[derive(Deserialize)]
     struct Response {
         access_token: String,
+        token_type: String,
+        expires_in: i64,
     }
 
     let query = json!({ "identityToken": format!("XBL3.0 x={user_hash};{xsts_token}") });
 
     let resp: Response = ureq::post(AUTH_URL).send_json(query)?.into_json()?;
 
-    Ok(resp.access_token)
+    let minecraft_account = MinecraftAccount {
+        access_token: resp.access_token,
+        token_type: resp.token_type,
+        expires: Local::now() + Duration::seconds(resp.expires_in),
+    };
+
+    Ok(minecraft_account)
 }
 
-fn get_minecraft_access_token(ms_access_token: &str) -> Result<String> {
+fn get_minecraft_account(ms_access_token: &str) -> Result<MinecraftAccount> {
     let xbl_token = authenticate_with_xbl(ms_access_token)?;
     let (xsts_token, user_hash) = authenticate_with_xsts(&xbl_token)?;
-    let mc_access_token = authenticate_with_minecraft(&xsts_token, &user_hash)?;
+    let minecraft_account = authenticate_with_minecraft(&xsts_token, &user_hash)?;
 
-    Ok(mc_access_token)
+    Ok(minecraft_account)
 }
 
 #[derive(Deserialize)]
@@ -98,16 +113,17 @@ pub struct UserProfile {
 }
 
 /// returns user profile and access token
-pub fn get_user_profile(account: &MsaAccount) -> Result<UserProfile> {
+pub fn get_user_profile(account: &MsaAccount) -> Result<(UserProfile, String)> {
     const PROFILE_URL: &str = "https://api.minecraftservices.com/minecraft/profile";
 
-    let token_type = &account.token_type;
-    let mc_access_token = get_minecraft_access_token(&account.access_token)?;
+    let mc_account = get_minecraft_account(&account.access_token)?;
+    let tt = mc_account.token_type;
+    let at = mc_account.access_token;
 
     let resp: UserProfile = ureq::get(PROFILE_URL)
-        .set("Authorization", &format!("{token_type} {mc_access_token}"))
+        .set("Authorization", &format!("{tt} {at}"))
         .call()?
         .into_json()?;
 
-    Ok(resp)
+    Ok((resp, mc_account.access_token))
 }
