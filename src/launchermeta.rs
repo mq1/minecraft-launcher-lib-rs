@@ -44,7 +44,7 @@ struct VersionManifest {
 }
 
 #[derive(Deserialize)]
-pub struct AssetIndex {
+pub struct AssetIndexMeta {
     pub id: String,
     pub url: Url,
 }
@@ -95,7 +95,7 @@ pub struct Library {
 pub struct MinecraftMeta {
     pub arguments: Arguments,
     pub id: String,
-    pub asset_index: AssetIndex,
+    pub asset_index: AssetIndexMeta,
     pub downloads: Downloads,
     pub libraries: Vec<Library>,
 }
