@@ -8,12 +8,23 @@ use std::{
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::{msa::MsaAccount, profile, BASE_DIR};
+use crate::{
+    msa::MsAccount,
+    profile::{get_minecraft_account, get_user_profile, McAccount},
+    BASE_DIR,
+};
+
+#[derive(Serialize, Deserialize)]
+struct Account {
+    id: String,
+    msa: MsAccount,
+    mca: McAccount,
+}
 
 #[derive(Serialize, Deserialize)]
 struct Config {
     format_version: String,
-    accounts: HashMap<String, MsaAccount>,
+    accounts: HashMap<String, Account>,
 }
 
 lazy_static! {
@@ -56,11 +67,17 @@ fn read() -> Result<Config> {
     Ok(config)
 }
 
-fn add(account: MsaAccount) -> Result<()> {
-    let mut config = read()?;
-    let (profile, _) = profile::get_user_profile(&account)?;
-    config.accounts.insert(profile.id, account);
+fn add(msa: MsAccount) -> Result<()> {
+    let mca = get_minecraft_account(&msa.access_token)?;
+    let profile = get_user_profile(&mca)?;
 
+    let mut config = read()?;
+    let account = Account {
+        id: profile.id,
+        msa,
+        mca,
+    };
+    config.accounts.insert(profile.name, account);
     write(&config)?;
 
     Ok(())

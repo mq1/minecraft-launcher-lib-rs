@@ -77,14 +77,14 @@ fn listen_login_callback() -> Result<String> {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct MsaAccount {
+pub struct MsAccount {
     pub access_token: String,
     pub token_type: String,
     expires: DateTime<Local>,
     refresh_token: String,
 }
 
-pub fn get_account() -> Result<MsaAccount> {
+pub fn get_account() -> Result<MsAccount> {
     let code = listen_login_callback()?;
 
     #[derive(Deserialize)]
@@ -109,7 +109,7 @@ pub fn get_account() -> Result<MsaAccount> {
 
     let resp: Response = ureq::post(url).send_form(&form)?.into_json()?;
 
-    let token = MsaAccount {
+    let token = MsAccount {
         access_token: resp.access_token,
         token_type: resp.token_type,
         expires: Local::now() + Duration::seconds(resp.expires_in),
