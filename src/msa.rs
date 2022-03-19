@@ -23,7 +23,7 @@ lazy_static! {
         rand_string
     };
     static ref CODE_CHALLENGE: String = {
-        let hash = format!("{:?}", Sha256::digest(CODE_VERIFIER.as_str()));
+        let hash = Sha256::digest(CODE_VERIFIER.as_str());
         let encoded = base64_url::encode(&hash);
 
         encoded
