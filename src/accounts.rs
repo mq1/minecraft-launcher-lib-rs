@@ -83,9 +83,9 @@ fn add(msa: MsAccount) -> Result<()> {
     Ok(())
 }
 
-fn remove(id: &str) -> Result<()> {
+fn remove(name: &str) -> Result<()> {
     let mut config = read()?;
-    config.accounts.remove(id);
+    config.accounts.remove(name);
 
     write(&config)?;
 
