@@ -36,7 +36,7 @@ fn download_asset(hash: &str) -> Result<()> {
 }
 
 fn download_asset_index(asset_index_meta: &AssetIndexMeta) -> Result<()> {
-    let path = INDEXES_DIR.join(asset_index_meta.id).with_extension("json");
+    let path = INDEXES_DIR.join(&asset_index_meta.id).with_extension("json");
     download_file(&asset_index_meta.url, &path)?;
 
     Ok(())

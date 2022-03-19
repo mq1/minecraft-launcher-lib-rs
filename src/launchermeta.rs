@@ -10,14 +10,14 @@ const VERSION_MANIFEST_URL: &str = "https://launchermeta.mojang.com/mc/game/vers
 
 #[derive(Deserialize)]
 #[serde(untagged)]
-enum ArgumentValue {
+pub enum ArgumentValue {
     One(String),
     Multiple(Vec<String>),
 }
 
 #[derive(Deserialize)]
 #[serde(untagged)]
-enum Argument {
+pub enum Argument {
     Simple(String),
     Explicit {
         rules: Vec<Rule>,
@@ -26,7 +26,7 @@ enum Argument {
 }
 
 #[derive(Deserialize)]
-struct Arguments {
+pub struct Arguments {
     pub game: Vec<Argument>,
     pub jvm: Vec<Argument>,
 }

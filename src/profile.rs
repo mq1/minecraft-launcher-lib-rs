@@ -117,8 +117,8 @@ pub struct UserProfile {
 pub fn get_user_profile(mca: &McAccount) -> Result<UserProfile> {
     const PROFILE_URL: &str = "https://api.minecraftservices.com/minecraft/profile";
 
-    let tt = mca.token_type;
-    let at = mca.access_token;
+    let tt = &mca.token_type;
+    let at = &mca.access_token;
 
     let resp: UserProfile = ureq::get(PROFILE_URL)
         .set("Authorization", &format!("{tt} {at}"))

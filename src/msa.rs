@@ -58,7 +58,6 @@ pub fn get_authorization_url() -> Result<Url, url::ParseError> {
 fn listen_login_callback() -> Result<String> {
     let server = tiny_http::Server::http("127.0.0.1:3003").unwrap();
     let request = server.recv()?;
-    let _ = request.respond(tiny_http::Response::from_string("You can close this tab"));
 
     let url = Url::parse(request.url())?;
     let hash_query: HashMap<_, _> = url.query_pairs().into_owned().collect();
@@ -72,6 +71,8 @@ fn listen_login_callback() -> Result<String> {
     }
 
     let code = hash_query.get("code").ok_or(anyhow!("Code not found"))?;
+
+    request.respond(tiny_http::Response::from_string("You can close this tab"))?;
 
     Ok(code.to_string())
 }
