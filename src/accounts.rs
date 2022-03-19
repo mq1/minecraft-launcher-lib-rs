@@ -67,7 +67,7 @@ fn read() -> Result<Config> {
     Ok(config)
 }
 
-fn add(msa: MsAccount) -> Result<()> {
+pub fn add(msa: MsAccount) -> Result<()> {
     let mca = get_minecraft_account(&msa.access_token)?;
     let profile = get_user_profile(&mca)?;
 
@@ -83,11 +83,18 @@ fn add(msa: MsAccount) -> Result<()> {
     Ok(())
 }
 
-fn remove(name: &str) -> Result<()> {
+pub fn remove(name: &str) -> Result<()> {
     let mut config = read()?;
     config.accounts.remove(name);
 
     write(&config)?;
 
     Ok(())
+}
+
+pub fn list() -> Result<Vec<String>> {
+    let config = read()?;
+    let accounts = config.accounts.into_keys().collect();
+
+    Ok(accounts)
 }
