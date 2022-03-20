@@ -59,7 +59,7 @@ fn listen_login_callback() -> Result<String> {
     let server = tiny_http::Server::http("127.0.0.1:3003").unwrap();
     let request = server.recv()?;
 
-    let url = Url::parse(request.url())?;
+    let url = Url::parse(&format!("{}{}", REDIRECT_URI, request.url()))?;
     let hash_query: HashMap<_, _> = url.query_pairs().into_owned().collect();
 
     let state = hash_query
@@ -97,7 +97,7 @@ pub fn get_account() -> Result<MsAccount> {
         refresh_token: String,
     }
 
-    const url: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
+    const URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
 
     let form = [
         ("client_id", CLIENT_ID),
@@ -108,7 +108,7 @@ pub fn get_account() -> Result<MsAccount> {
         ("code_verifier", CODE_VERIFIER.as_ref()),
     ];
 
-    let resp: Response = ureq::post(url).send_form(&form)?.into_json()?;
+    let resp: Response = ureq::post(URL).send_form(&form)?.into_json()?;
 
     let token = MsAccount {
         access_token: resp.access_token,
