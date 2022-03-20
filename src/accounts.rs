@@ -7,9 +7,10 @@ use std::{
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 use crate::{
-    msa::MsAccount,
+    msa::{self, MsAccount},
     profile::{get_minecraft_account, get_user_profile, McAccount},
     BASE_DIR,
 };
@@ -67,7 +68,13 @@ fn read() -> Result<Config> {
     Ok(config)
 }
 
-pub fn add(msa: MsAccount) -> Result<()> {
+pub fn get_auth_url() -> Result<Url, url::ParseError> {
+    msa::get_auth_url()
+}
+
+pub fn add() -> Result<()> {
+    let msa = msa::get_account()?;
+
     let mca = get_minecraft_account(&msa.access_token)?;
     let profile = get_user_profile(&mca)?;
 

@@ -14,7 +14,7 @@ pub mod config;
 pub mod instances;
 pub mod launchermeta;
 pub mod libraries;
-pub mod msa;
+mod msa;
 pub mod profile;
 pub mod launch;
 

@@ -39,7 +39,7 @@ lazy_static! {
     };
 }
 
-pub fn get_authorization_url() -> Result<Url, url::ParseError> {
+pub fn get_auth_url() -> Result<Url, url::ParseError> {
     Url::parse_with_params(
         "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize",
         &[
