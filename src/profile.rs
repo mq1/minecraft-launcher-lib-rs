@@ -1,6 +1,6 @@
-use crate::msa::MsAccount;
 use anyhow::Result;
 use chrono::{DateTime, Duration, Local};
+use isahc::{RequestExt, Request, ReadResponseExt};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -24,9 +24,15 @@ fn authenticate_with_xbl(ms_access_token: &str) -> Result<String> {
         "TokenType": "JWT"
     });
 
-    let resp: Response = ureq::post(AUTH_URL).send_json(query)?.into_json()?;
+    // fallback for https://github.com/algesten/ureq/issues/470
+    let mut resp = Request::post(AUTH_URL)
+        .header("Content-Type", "application/json")
+        .body(serde_json::to_string(&query)?)?
+        .send()?;
+    let text = resp.text()?;
+    let token = serde_json::from_str::<Response>(&text)?.token;
 
-    Ok(resp.token)
+    Ok(token)
 }
 
 /// returns xsts_token and user_hash
