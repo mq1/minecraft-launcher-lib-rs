@@ -89,3 +89,8 @@ pub fn get_available_versions(minecraft_directory: &Path) -> Result<Vec<Version>
 
     Ok(version_list)
 }
+
+/// Tries the find out the path to the default java executable
+pub fn get_java_executable() -> String {
+    todo!()
+}
