@@ -4,6 +4,8 @@ use anyhow::Result;
 use isahc::ReadResponseExt;
 use serde::Deserialize;
 
+const VERSION_MANIFEST_URL: &str = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+
 /// Returns the default path to the .minecraft directory
 pub fn get_minecraft_directory() -> Result<PathBuf> {
     let base_dirs = directories::BaseDirs::new().ok_or(anyhow!("BaseDirs not found"))?;
@@ -22,13 +24,27 @@ pub struct LatestVersion {
 }
 
 #[derive(Deserialize)]
+pub struct Version {
+    id: String,
+    r#type: String
+}
+
+#[derive(Deserialize)]
 struct VersionManifest {
-    latest: LatestVersion
+    latest: LatestVersion,
+    versions: Vec<Version>
 }
 
 /// Returns the latest version of Minecraft
 pub fn get_latest_version() -> Result<LatestVersion> {
-    let resp = isahc::get("https://launchermeta.mojang.com/mc/game/version_manifest.json")?.json::<VersionManifest>()?;
+    let version_manifest = isahc::get(VERSION_MANIFEST_URL)?.json::<VersionManifest>()?;
 
-    Ok(resp.latest)
+    Ok(version_manifest.latest)
+}
+
+/// Returns all versions that Mojang offers to download
+pub fn get_version_list() -> Result<Vec<Version>> {
+    let version_manifest = isahc::get(VERSION_MANIFEST_URL)?.json::<VersionManifest>()?;
+
+    Ok(version_manifest.versions)
 }
