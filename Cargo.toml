@@ -10,4 +10,4 @@ license = "GPL-3.0-or-later"
 
 [dependencies]
 anyhow = "1"
-directories = "1"
+directories = "4"
