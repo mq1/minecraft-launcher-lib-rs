@@ -70,3 +70,22 @@ pub fn get_installed_versions(minecraft_directory: &Path) -> Result<Vec<Version>
 
     Ok(version_list)
 }
+
+/// Returns all installed versions and all versions that Mojang offers to download
+pub fn get_available_versions(minecraft_directory: &Path) -> Result<Vec<Version>> {
+    let mut version_list = vec![];
+    let mut version_check = vec![];
+
+    for version in get_version_list()? {
+        version_check.push(version.id.clone());
+        version_list.push(version);
+    }
+
+    for version in get_installed_versions(minecraft_directory)? {
+        if version_check.iter().find(|&id| id.eq(&version.id)).is_none() {
+            version_list.push(version);
+        }
+    }
+
+    Ok(version_list)
+}
