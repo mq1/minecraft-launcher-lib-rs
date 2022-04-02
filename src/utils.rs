@@ -94,3 +94,19 @@ pub fn get_available_versions(minecraft_directory: &Path) -> Result<Vec<Version>
 pub fn get_java_executable() -> String {
     todo!()
 }
+
+/// Checks if the given version exists
+pub fn is_version_valid(id: &str, minecraft_directory: &Path) -> Result<bool> {
+    if minecraft_directory.join("versions").join(id).is_dir() {
+        return Ok(true);
+    }
+
+    let version_manifest = isahc::get(VERSION_MANIFEST_URL)?.json::<VersionManifest>()?;
+    for version in version_manifest.versions {
+        if version.id == id {
+            return  Ok(true);
+        }
+    }
+
+    Ok(false)
+}
