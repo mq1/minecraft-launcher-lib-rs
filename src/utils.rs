@@ -25,8 +25,8 @@ pub struct LatestVersion {
 
 #[derive(Deserialize)]
 pub struct Version {
-    id: String,
-    r#type: String
+    pub id: String,
+    pub r#type: String
 }
 
 #[derive(Deserialize)]
