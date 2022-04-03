@@ -107,8 +107,17 @@ pub fn get_java_executable() -> String {
 }
 
 #[derive(Deserialize)]
+pub struct Image {
+    pub content_type: String,
+
+    #[serde(rename(deserialize = "imageURL"))]
+    pub image_url: String,
+}
+
+#[derive(Deserialize)]
 pub struct Tile {
     pub sub_header: String,
+    pub image: Image,
     pub title: String,
 }
 
