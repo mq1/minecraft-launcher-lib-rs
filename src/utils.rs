@@ -1,7 +1,7 @@
 use std::{
     fs::{self, File},
     io::BufReader,
-    path::{Path, PathBuf},
+    path::{Path, PathBuf}, fmt::format,
 };
 
 use anyhow::Result;
@@ -155,8 +155,10 @@ pub fn get_minecraft_news(page_size: Option<usize>) -> Result<Articles> {
     url.query_pairs_mut()
         .append_pair("pageSize", &format!("{page_size}"));
 
+    let user_agent = format!("{}/{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+
     let mut resp = Request::get(url.to_string())
-        .header("user-agent", "minecraft-launcher-lib-rs")
+        .header("user-agent", user_agent)
         .body(())?
         .send()
         .expect("Failed getting articles.grid");
