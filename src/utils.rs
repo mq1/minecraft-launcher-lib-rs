@@ -1,7 +1,7 @@
 use std::{
     fs::{self, File},
     io::BufReader,
-    path::{Path, PathBuf}, fmt::format,
+    path::{Path, PathBuf},
 };
 
 use anyhow::Result;
@@ -9,6 +9,7 @@ use isahc::{ReadResponseExt, Request, RequestExt};
 use serde::Deserialize;
 use url::Url;
 
+const MINECRAFT_NET_URL: &str = "https://www.minecraft.net";
 const VERSION_MANIFEST_URL: &str = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
 const ARTICLES_URL: &str =
     "https://www.minecraft.net/content/minecraft-net/_jcr_content.articles.grid";
@@ -172,9 +173,18 @@ pub fn get_minecraft_news(page_size: Option<usize>) -> Result<Articles> {
         .send()
         .expect("Failed getting articles.grid");
 
-    let articles = resp
+    let mut articles = resp
         .json::<Articles>()
         .expect("Failed parsing articles.grid");
+
+    // set complete URLs
+    for article in articles.article_grid.iter_mut() {
+        let image_url = Url::parse(MINECRAFT_NET_URL)?.join(&article.default_tile.image.image_url)?;
+        article.default_tile.image.image_url = image_url.to_string();
+
+        let article_url = Url::parse(MINECRAFT_NET_URL)?.join(&article.article_url)?;
+        article.article_url = article_url.to_string();
+    }
 
     Ok(articles)
 }
