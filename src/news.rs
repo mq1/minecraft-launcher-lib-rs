@@ -13,7 +13,7 @@ pub struct Image {
     pub content_type: String,
 
     #[serde(rename(deserialize = "imageURL"))]
-    pub image_url: String,
+    pub image_url: Url,
 }
 
 #[derive(Deserialize)]
@@ -32,7 +32,7 @@ pub struct Article {
     pub primary_category: String,
     pub preferred_tile: Option<Tile>,
     pub categories: Vec<String>,
-    pub article_url: String,
+    pub article_url: Url,
     pub publish_date: String,
     pub tags: Vec<String>,
 }
@@ -69,12 +69,8 @@ pub fn get_minecraft_news(page_size: Option<usize>) -> Result<Articles> {
 
     // set complete URLs
     for article in articles.article_grid.iter_mut() {
-        let image_url =
-            Url::parse(MINECRAFT_NET_URL)?.join(&article.default_tile.image.image_url)?;
-        article.default_tile.image.image_url = image_url.to_string();
-
-        let article_url = Url::parse(MINECRAFT_NET_URL)?.join(&article.article_url)?;
-        article.article_url = article_url.to_string();
+        article.default_tile.image.image_url.set_host(Some(MINECRAFT_NET_URL))?;
+        article.article_url.set_host(Some(MINECRAFT_NET_URL))?;
     }
 
     Ok(articles)
