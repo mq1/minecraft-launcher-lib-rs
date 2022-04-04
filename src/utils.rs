@@ -5,14 +5,10 @@ use std::{
 };
 
 use anyhow::Result;
-use isahc::{ReadResponseExt, Request, RequestExt};
+use isahc::ReadResponseExt;
 use serde::Deserialize;
-use url::Url;
 
-const MINECRAFT_NET_URL: &str = "https://www.minecraft.net";
 const VERSION_MANIFEST_URL: &str = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
-const ARTICLES_URL: &str =
-    "https://www.minecraft.net/content/minecraft-net/_jcr_content.articles.grid";
 
 /// Returns the default path to the .minecraft directory
 pub fn get_minecraft_directory() -> Result<PathBuf> {
@@ -107,36 +103,6 @@ pub fn get_java_executable() -> String {
     todo!()
 }
 
-#[derive(Deserialize)]
-pub struct Image {
-    pub content_type: String,
-
-    #[serde(rename(deserialize = "imageURL"))]
-    pub image_url: String,
-}
-
-#[derive(Deserialize)]
-pub struct Tile {
-    pub sub_header: String,
-    pub image: Image,
-    pub title: String,
-}
-
-#[derive(Deserialize)]
-pub struct Article {
-    pub default_tile: Tile,
-    pub article_url: String,
-    pub publish_date: String,
-}
-
-/// https://www.minecraft.net/content/minecraft-net/_jcr_content.articles.grid
-/// TODO images
-#[derive(Deserialize)]
-pub struct Articles {
-    pub article_grid: Vec<Article>,
-    pub article_count: usize,
-}
-
 /// Checks if the given version exists
 pub fn is_version_valid(id: &str, minecraft_directory: &Path) -> Result<bool> {
     if minecraft_directory.join("versions").join(id).is_dir() {
@@ -151,40 +117,4 @@ pub fn is_version_valid(id: &str, minecraft_directory: &Path) -> Result<bool> {
     }
 
     Ok(false)
-}
-
-/// Get the news from minecraft.net
-pub fn get_minecraft_news(page_size: Option<usize>) -> Result<Articles> {
-    let page_size = if page_size.is_none() {
-        20
-    } else {
-        page_size.unwrap()
-    };
-
-    let mut url = Url::parse(ARTICLES_URL)?;
-    url.query_pairs_mut()
-        .append_pair("pageSize", &format!("{page_size}"));
-
-    let user_agent = format!("{}/{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
-
-    let mut resp = Request::get(url.to_string())
-        .header("user-agent", user_agent)
-        .body(())?
-        .send()
-        .expect("Failed getting articles.grid");
-
-    let mut articles = resp
-        .json::<Articles>()
-        .expect("Failed parsing articles.grid");
-
-    // set complete URLs
-    for article in articles.article_grid.iter_mut() {
-        let image_url = Url::parse(MINECRAFT_NET_URL)?.join(&article.default_tile.image.image_url)?;
-        article.default_tile.image.image_url = image_url.to_string();
-
-        let article_url = Url::parse(MINECRAFT_NET_URL)?.join(&article.article_url)?;
-        article.article_url = article_url.to_string();
-    }
-
-    Ok(articles)
 }
