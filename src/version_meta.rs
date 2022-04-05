@@ -84,14 +84,35 @@ pub struct Artifact {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct Classifiers {
+    pub javadoc: Option<Artifact>,
+    pub natives_linux: Option<Artifact>,
+    pub natives_macos: Option<Artifact>,
+    pub natives_osx: Option<Artifact>,
+    pub natives_windows: Option<Artifact>,
+    pub sources: Option<Artifact>
+}
+
+#[derive(Deserialize)]
 pub struct LibraryDownloads {
     pub artifact: Artifact,
+    pub classifiers: Option<Classifiers>
+}
+
+#[derive(Deserialize)]
+pub struct Natives {
+    pub linux: Option<String>,
+    pub osx: Option<String>,
+    pub windows: Option<String>
 }
 
 #[derive(Deserialize)]
 pub struct Library {
     pub downloads: LibraryDownloads,
     pub name: String,
+    pub natives: Option<Natives>,
+    pub rules: Option<Vec<Rule>>
 }
 
 #[derive(Deserialize)]
