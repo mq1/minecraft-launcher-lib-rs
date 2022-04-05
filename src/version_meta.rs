@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use isahc::ReadResponseExt;
@@ -5,9 +7,40 @@ use serde::Deserialize;
 use url::Url;
 
 #[derive(Deserialize)]
+pub struct Os {
+    pub name: Option<String>,
+    pub version: Option<String>,
+    pub arch: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct Rule {
+    pub action: String,
+    pub features: Option<HashMap<String, bool>>,
+    pub os: Option<Os>,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+pub enum ArgumentValue {
+    One(String),
+    Multiple(Vec<String>),
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+pub enum Argument {
+    Simple(String),
+    Explicit {
+        rules: Vec<Rule>,
+        value: ArgumentValue,
+    },
+}
+
+#[derive(Deserialize)]
 pub struct Arguments {
-    pub game: Vec<String>,
-    pub jvm: Vec<String>,
+    pub game: Vec<Argument>,
+    pub jvm: Vec<Argument>,
 }
 
 #[derive(Deserialize)]
