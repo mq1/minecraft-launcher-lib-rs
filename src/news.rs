@@ -1,6 +1,6 @@
 use anyhow::Result;
 use isahc::{ReadResponseExt, Request, RequestExt};
-use serde::Deserialize;
+use serde::{de::Error, Deserialize, Deserializer};
 use url::Url;
 
 use crate::MINECRAFT_NET_URL;
@@ -8,11 +8,24 @@ use crate::MINECRAFT_NET_URL;
 const ARTICLES_URL: &str =
     "https://www.minecraft.net/content/minecraft-net/_jcr_content.articles.grid";
 
+fn from_relative_url<'de, D>(deserializer: D) -> Result<Url, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let relative_url: String = Deserialize::deserialize(deserializer)?;
+
+    let mut url = Url::parse(MINECRAFT_NET_URL).map_err(D::Error::custom)?;
+    url.set_path(&relative_url);
+
+    Ok(url)
+}
+
 #[derive(Deserialize)]
 pub struct Image {
     pub content_type: String,
 
     #[serde(rename(deserialize = "imageURL"))]
+    #[serde(deserialize_with = "from_relative_url")]
     pub image_url: Url,
 }
 
@@ -32,6 +45,7 @@ pub struct Article {
     pub primary_category: String,
     pub preferred_tile: Option<Tile>,
     pub categories: Vec<String>,
+    #[serde(deserialize_with = "from_relative_url")]
     pub article_url: Url,
     pub publish_date: String,
     pub tags: Vec<String>,
@@ -57,21 +71,13 @@ pub fn get_minecraft_news(page_size: Option<usize>) -> Result<Articles> {
 
     let user_agent = format!("{}/{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 
-    let mut resp = Request::get(url.to_string())
+    let articles = Request::get(url.to_string())
         .header("user-agent", user_agent)
         .body(())?
         .send()
-        .expect("Failed getting articles.grid");
-
-    let mut articles = resp
+        .expect("Failed getting articles.grid")
         .json::<Articles>()
         .expect("Failed parsing articles.grid");
-
-    // set complete URLs
-    for article in articles.article_grid.iter_mut() {
-        article.default_tile.image.image_url.set_host(Some(MINECRAFT_NET_URL))?;
-        article.article_url.set_host(Some(MINECRAFT_NET_URL))?;
-    }
 
     Ok(articles)
 }
