@@ -3,8 +3,16 @@ use std::collections::HashMap;
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use isahc::ReadResponseExt;
+use regex::Regex;
 use serde::Deserialize;
 use url::Url;
+
+#[derive(Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum Action {
+    Allow,
+    Disallow
+}
 
 #[derive(Deserialize)]
 pub struct Os {
@@ -15,9 +23,66 @@ pub struct Os {
 
 #[derive(Deserialize)]
 pub struct Rule {
-    pub action: String,
+    pub action: Action,
     pub features: Option<HashMap<String, bool>>,
     pub os: Option<Os>,
+}
+
+impl Rule {
+    pub fn parse(&self, options: HashMap<String, bool>) -> bool {
+        let return_value = if self.action == Action::Allow { false } else { true };
+
+        if self.os.is_some() {
+            let os = self.os.as_ref().unwrap();
+            
+            if os.name.is_some() {
+                let name = os.name.as_ref().unwrap().replace("osx", "macos");
+
+                if name.as_str() != std::env::consts::OS {
+                    return return_value;
+                }
+            }
+
+            if os.arch.is_some() {
+                let arch = os.arch.as_ref().unwrap();
+
+                if arch.as_str() != std::env::consts::ARCH {
+                    return return_value;
+                }
+            }
+
+            if os.version.is_some() {
+                let version = os.version.as_ref().unwrap();
+                let re = Regex::new(version).unwrap();
+
+                let actual_version = match os_info::get().version() {
+                    os_info::Version::Unknown => "".to_string(),
+                    os_info::Version::Semantic(major, minor, _) => format!("{major}.{minor}"),
+                    os_info::Version::Rolling(_) => "".to_string(),
+                    os_info::Version::Custom(_) => "".to_string(),
+                };
+
+                if !re.is_match(&actual_version) {
+                    return return_value;
+                }
+            }
+        }
+
+        if self.features.is_some() {
+            let features = self.features.as_ref().unwrap();
+
+            for (key, _) in features {
+                if key == "has_custom_resolution" && *options.get("customResolution").unwrap() {
+                    return return_value;
+                }
+                if key == "is_demo_user" && *options.get("demo").unwrap() {
+                    return return_value;
+                }
+            }
+        }
+
+        return_value
+    }
 }
 
 #[derive(Deserialize)]
