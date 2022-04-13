@@ -1,6 +1,6 @@
 use anyhow::Result;
 use isahc::{ReadResponseExt, Request, RequestExt};
-use serde::{de::Error, Deserialize, Deserializer};
+use serde::{de::Error, Deserialize, Deserializer, Serialize};
 use url::Url;
 
 use crate::MINECRAFT_NET_URL;
@@ -20,7 +20,7 @@ where
     Ok(url)
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Image {
     pub content_type: String,
 
@@ -29,7 +29,7 @@ pub struct Image {
     pub image_url: Url,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Tile {
     pub sub_header: String,
     pub image: Image,
@@ -37,7 +37,7 @@ pub struct Tile {
     pub title: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Article {
     pub default_tile: Tile,
     #[serde(rename(deserialize = "articleLang"))]
@@ -51,7 +51,7 @@ pub struct Article {
     pub tags: Vec<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Articles {
     pub article_grid: Vec<Article>,
     pub article_count: usize,
