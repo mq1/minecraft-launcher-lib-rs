@@ -1,3 +1,4 @@
+pub mod instances;
 pub mod news;
 pub mod version_manifest;
 pub mod version_meta;
@@ -8,7 +9,10 @@ const MINECRAFT_NET_URL: &str = "https://www.minecraft.net";
 mod tests {
     use anyhow::Result;
 
-    use crate::{version_manifest::get_version_manifest, news::get_minecraft_news, version_meta::get_version_meta};
+    use crate::{
+        news::get_minecraft_news, version_manifest::get_version_manifest,
+        version_meta::get_version_meta,
+    };
 
     #[test]
     fn version_manifest() -> Result<()> {
