@@ -18,3 +18,11 @@ pub fn rename(old_name: &str, new_name: &str, instances_dir: &Path) -> Result<Pa
 
     Ok(new_path)
 }
+
+/// removes an instance
+pub fn remove(name: &str, instances_dir: &Path) -> Result<()> {
+    let path = instances_dir.join(name);
+    fs::remove_dir_all(path)?;
+
+    Ok(())
+}
