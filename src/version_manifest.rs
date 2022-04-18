@@ -1,6 +1,5 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use isahc::ReadResponseExt;
 use serde::Deserialize;
 use url::Url;
 
@@ -9,7 +8,7 @@ const VERSION_MANIFEST_URL: &str = "https://launchermeta.mojang.com/mc/game/vers
 #[derive(Deserialize)]
 pub struct LatestVersion {
     pub release: String,
-    pub snapshot: String
+    pub snapshot: String,
 }
 
 #[derive(Deserialize)]
@@ -17,17 +16,17 @@ pub struct Version {
     pub id: String,
     pub r#type: String,
     pub url: Url,
-    pub time: DateTime<Utc>
+    pub time: DateTime<Utc>,
 }
 
 #[derive(Deserialize)]
 pub struct VersionManifest {
     pub latest: LatestVersion,
-    pub versions: Vec<Version>
+    pub versions: Vec<Version>,
 }
 
 pub fn get_version_manifest() -> Result<VersionManifest> {
-    let version_manifest = isahc::get(VERSION_MANIFEST_URL)?.json()?;
+    let version_manifest = ureq::get(VERSION_MANIFEST_URL).call()?.into_json()?;
 
     Ok(version_manifest)
 }

@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use isahc::ReadResponseExt;
 use regex::Regex;
 use serde::Deserialize;
 use url::Url;
@@ -209,7 +208,7 @@ pub struct VersionMeta {
 }
 
 pub fn get_version_meta(url: &Url) -> Result<VersionMeta> {
-    let version_meta = isahc::get(url.as_str())?.json()?;
+    let version_meta = ureq::get(url.as_str()).call()?.into_json()?;
 
     Ok(version_meta)
 }

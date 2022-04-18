@@ -1,5 +1,4 @@
 use anyhow::Result;
-use isahc::{ReadResponseExt, Request, RequestExt};
 use serde::{de::Error, Deserialize, Deserializer, Serialize};
 use url::Url;
 
@@ -71,13 +70,10 @@ pub fn get_minecraft_news(page_size: Option<usize>) -> Result<Articles> {
 
     let user_agent = format!("{}/{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 
-    let articles = Request::get(url.to_string())
-        .header("user-agent", user_agent)
-        .body(())?
-        .send()
-        .expect("Failed getting articles.grid")
-        .json::<Articles>()
-        .expect("Failed parsing articles.grid");
+    let articles = ureq::get(url.as_str())
+        .set("user-agent", &user_agent)
+        .call()?
+        .into_json()?;
 
     Ok(articles)
 }
