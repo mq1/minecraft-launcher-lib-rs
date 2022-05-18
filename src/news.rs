@@ -70,10 +70,10 @@ pub fn get_minecraft_news(page_size: Option<usize>) -> Result<Articles> {
 
     let user_agent = format!("{}/{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 
-    let articles = ureq::get(url.as_str())
-        .set("user-agent", &user_agent)
-        .call()?
-        .into_json()?;
+    let articles = attohttpc::get(url)
+        .header("user-agent", &user_agent)
+        .send()?
+        .json()?;
 
     Ok(articles)
 }

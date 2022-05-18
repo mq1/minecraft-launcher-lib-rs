@@ -26,7 +26,7 @@ pub struct VersionManifest {
 }
 
 pub fn get_version_manifest() -> Result<VersionManifest> {
-    let version_manifest = ureq::get(VERSION_MANIFEST_URL).call()?.into_json()?;
+    let version_manifest = attohttpc::get(VERSION_MANIFEST_URL).send()?.json()?;
 
     Ok(version_manifest)
 }

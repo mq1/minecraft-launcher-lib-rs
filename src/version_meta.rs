@@ -208,7 +208,7 @@ pub struct VersionMeta {
 }
 
 pub fn get_version_meta(url: &Url) -> Result<VersionMeta> {
-    let version_meta = ureq::get(url.as_str()).call()?.into_json()?;
+    let version_meta = attohttpc::get(url).send()?.json()?;
 
     Ok(version_meta)
 }
