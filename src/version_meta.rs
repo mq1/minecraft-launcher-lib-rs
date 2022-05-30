@@ -29,7 +29,7 @@ pub struct Rule {
 
 impl Rule {
     pub fn parse(&self, options: HashMap<String, bool>) -> bool {
-        let return_value = if self.action == Action::Allow { false } else { true };
+        let return_value = !(self.action == Action::Allow);
 
         if self.os.is_some() {
             let os = self.os.as_ref().unwrap();
@@ -70,7 +70,7 @@ impl Rule {
         if self.features.is_some() {
             let features = self.features.as_ref().unwrap();
 
-            for (key, _) in features {
+            for key in features.keys() {
                 if key == "has_custom_resolution" && *options.get("customResolution").unwrap() {
                     return return_value;
                 }

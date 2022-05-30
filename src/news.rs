@@ -58,11 +58,7 @@ pub struct Articles {
 
 /// Get the news from minecraft.net
 pub fn get_minecraft_news(page_size: Option<usize>) -> Result<Articles> {
-    let page_size = if page_size.is_none() {
-        20
-    } else {
-        page_size.unwrap()
-    };
+    let page_size = page_size.unwrap_or(20);
 
     let mut url = Url::parse(ARTICLES_URL)?;
     url.query_pairs_mut()
