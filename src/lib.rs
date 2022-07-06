@@ -11,6 +11,7 @@ extern crate lazy_static;
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use url::Url;
 
     use crate::{
         news::get_minecraft_news, version_manifest::get_version_manifest,
@@ -32,7 +33,7 @@ mod tests {
     #[test]
     fn version_meta() -> Result<()> {
         let version_manifest = get_version_manifest()?;
-        let _ = get_version_meta(&version_manifest.versions[0].url)?;
+        let _ = get_version_meta(&Url::parse(&version_manifest.versions[0].url)?)?;
         Ok(())
     }
 }
