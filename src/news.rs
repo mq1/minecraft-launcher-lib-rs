@@ -9,65 +9,37 @@ lazy_static! {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Articles {
-    #[serde(rename = "article_grid")]
+pub struct Welcome {
     pub article_grid: Vec<ArticleGrid>,
-
-    #[serde(rename = "article_count")]
     pub article_count: i64,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct ArticleGrid {
-    #[serde(rename = "default_tile")]
     pub default_tile: Tile,
-
     #[serde(rename = "articleLang")]
     pub article_lang: ArticleLang,
-
-    #[serde(rename = "primary_category")]
     pub primary_category: String,
-
-    #[serde(rename = "categories")]
     pub categories: Vec<String>,
-
-    #[serde(rename = "article_url")]
     pub article_url: String,
-
-    #[serde(rename = "publish_date")]
     pub publish_date: String,
-
-    #[serde(rename = "tags")]
     pub tags: Vec<String>,
-
-    #[serde(rename = "preferred_tile")]
     pub preferred_tile: Option<Tile>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Tile {
-    #[serde(rename = "sub_header")]
     pub sub_header: String,
-
-    #[serde(rename = "image")]
     pub image: Image,
-
-    #[serde(rename = "tile_size")]
     pub tile_size: TileSize,
-
-    #[serde(rename = "title")]
     pub title: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Image {
-    #[serde(rename = "content_type")]
     pub content_type: ContentType,
-
     #[serde(rename = "imageURL")]
     pub image_url: String,
-
-    #[serde(rename = "alt")]
     pub alt: Option<String>,
 }
 
@@ -87,10 +59,8 @@ pub enum ContentType {
 pub enum TileSize {
     #[serde(rename = "1x1")]
     The1X1,
-
     #[serde(rename = "2x1")]
     The2X1,
-
     #[serde(rename = "2x2")]
     The2X2,
 }
