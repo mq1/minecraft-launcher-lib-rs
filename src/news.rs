@@ -1,66 +1,105 @@
 use anyhow::Result;
-use serde::{de::Error, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::MINECRAFT_NET_URL;
-
-const ARTICLES_URL: &str =
-    "https://www.minecraft.net/content/minecraft-net/_jcr_content.articles.grid";
-
-fn from_relative_url<'de, D>(deserializer: D) -> Result<Url, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let relative_url: String = Deserialize::deserialize(deserializer)?;
-
-    let mut url = Url::parse(MINECRAFT_NET_URL).map_err(D::Error::custom)?;
-    url.set_path(&relative_url);
-
-    Ok(url)
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Image {
-    pub content_type: String,
-
-    #[serde(rename(deserialize = "imageURL"))]
-    #[serde(deserialize_with = "from_relative_url")]
-    pub image_url: Url,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Tile {
-    pub sub_header: String,
-    pub image: Image,
-    pub tile_size: String,
-    pub title: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Article {
-    pub default_tile: Tile,
-    #[serde(rename(deserialize = "articleLang"))]
-    pub article_lang: String,
-    pub primary_category: String,
-    pub preferred_tile: Option<Tile>,
-    pub categories: Vec<String>,
-    #[serde(deserialize_with = "from_relative_url")]
-    pub article_url: Url,
-    pub publish_date: String,
-    pub tags: Vec<String>,
+lazy_static! {
+    static ref ARTICLES_URL: Url =
+        Url::parse("https://www.minecraft.net/content/minecraft-net/_jcr_content.articles.grid")
+            .unwrap();
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Articles {
-    pub article_grid: Vec<Article>,
-    pub article_count: usize,
+    #[serde(rename = "article_grid")]
+    pub article_grid: Vec<ArticleGrid>,
+
+    #[serde(rename = "article_count")]
+    pub article_count: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ArticleGrid {
+    #[serde(rename = "default_tile")]
+    pub default_tile: Tile,
+
+    #[serde(rename = "articleLang")]
+    pub article_lang: ArticleLang,
+
+    #[serde(rename = "primary_category")]
+    pub primary_category: String,
+
+    #[serde(rename = "categories")]
+    pub categories: Vec<String>,
+
+    #[serde(rename = "article_url")]
+    pub article_url: String,
+
+    #[serde(rename = "publish_date")]
+    pub publish_date: String,
+
+    #[serde(rename = "tags")]
+    pub tags: Vec<String>,
+
+    #[serde(rename = "preferred_tile")]
+    pub preferred_tile: Option<Tile>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Tile {
+    #[serde(rename = "sub_header")]
+    pub sub_header: String,
+
+    #[serde(rename = "image")]
+    pub image: Image,
+
+    #[serde(rename = "tile_size")]
+    pub tile_size: TileSize,
+
+    #[serde(rename = "title")]
+    pub title: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Image {
+    #[serde(rename = "content_type")]
+    pub content_type: ContentType,
+
+    #[serde(rename = "imageURL")]
+    pub image_url: String,
+
+    #[serde(rename = "alt")]
+    pub alt: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum ArticleLang {
+    #[serde(rename = "en-us")]
+    EnUs,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum ContentType {
+    #[serde(rename = "image")]
+    Image,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum TileSize {
+    #[serde(rename = "1x1")]
+    The1X1,
+
+    #[serde(rename = "2x1")]
+    The2X1,
+
+    #[serde(rename = "2x2")]
+    The2X2,
 }
 
 /// Get the news from minecraft.net
 pub fn get_minecraft_news(page_size: Option<usize>) -> Result<Articles> {
     let page_size = page_size.unwrap_or(20);
 
-    let mut url = Url::parse(ARTICLES_URL)?;
+    let mut url = ARTICLES_URL.clone();
     url.query_pairs_mut()
         .append_pair("pageSize", &format!("{page_size}"));
 

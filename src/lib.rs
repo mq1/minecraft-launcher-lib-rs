@@ -5,6 +5,9 @@ pub mod version_meta;
 
 const MINECRAFT_NET_URL: &str = "https://www.minecraft.net";
 
+#[macro_use]
+extern crate lazy_static;
+
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
