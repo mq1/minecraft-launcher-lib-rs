@@ -9,7 +9,7 @@ lazy_static! {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Welcome {
+pub struct Articles {
     pub article_grid: Vec<ArticleGrid>,
     pub article_count: i64,
 }
