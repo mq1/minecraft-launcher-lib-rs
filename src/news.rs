@@ -10,12 +10,12 @@ lazy_static! {
 
 #[derive(Serialize, Deserialize)]
 pub struct Articles {
-    pub article_grid: Vec<ArticleGrid>,
+    pub article_grid: Vec<Article>,
     pub article_count: i64,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ArticleGrid {
+pub struct Article {
     pub default_tile: Tile,
     #[serde(rename = "articleLang")]
     pub article_lang: ArticleLang,
